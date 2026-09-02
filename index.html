@@ -533,7 +533,10 @@ function show(name, opt){
 }
 function goHome(){
   if(mode === "quiz" && !answered && (entry.debit.length || entry.credit.length)) toast("続きを保存しました");
-  if(history.state && history.state.v === mode && mode !== "home") history.back(); else show("home", {fromPop:true});
+  if(history.state && history.state.v === mode && mode !== "home"){
+    const from = mode; history.back();
+    setTimeout(() => { if(mode === from) show("home", {fromPop:true}); }, 250);  // 履歴が効かない環境の保険
+  } else show("home", {fromPop:true});
 }
 try{ history.replaceState({v:"home"}, ""); }catch(e){}
 window.addEventListener("popstate", e => {
