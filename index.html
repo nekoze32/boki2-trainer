@@ -3,13 +3,13 @@
 <head>
 <meta charset="utf-8">
 <meta name="description" content="簿記2級の仕訳と原価計算を、電車で片手で。電卓とメモ常駐の演習アプリ。">
-<meta property="og:title" content="ボキトレ（仮称）— 電車で片手、鉛筆なしで簿記2級">
+<meta property="og:title" content="ボキトレイン — 一駅一問。鉛筆も紙も出さずに、片手で簿記2級">
 <meta property="og:description" content="仕訳60問＋ボックス図で解く原価計算。下書き用紙を画面にしました。電卓とメモは常駐、復習は忘却曲線で自動。">
 <meta property="og:type" content="website">
 <meta property="og:url" content="https://nekoze32.github.io/boki2-trainer/">
 <meta name="twitter:card" content="summary">
-<link rel="manifest" href="data:application/manifest+json,%7B%22name%22%3A%20%22%E3%83%9C%E3%82%AD%E3%83%88%E3%83%AC%22%2C%20%22short_name%22%3A%20%22%E3%83%9C%E3%82%AD%E3%83%88%E3%83%AC%22%2C%20%22start_url%22%3A%20%22.%22%2C%20%22display%22%3A%20%22standalone%22%2C%20%22background_color%22%3A%20%22%23F6F7F4%22%2C%20%22theme_color%22%3A%20%22%230E7A5F%22%2C%20%22lang%22%3A%20%22ja%22%7D">
-<title>ボキトレ</title>
+<link rel="manifest" href="data:application/manifest+json,%7B%22name%22%3A%20%22%E3%83%9C%E3%82%AD%E3%83%88%E3%83%AC%E3%82%A4%E3%83%B3%22%2C%20%22short_name%22%3A%20%22%E3%83%9C%E3%82%AD%E3%83%88%E3%83%AC%E3%82%A4%E3%83%B3%22%2C%20%22start_url%22%3A%20%22.%22%2C%20%22display%22%3A%20%22standalone%22%2C%20%22background_color%22%3A%20%22%23F6F7F4%22%2C%20%22theme_color%22%3A%20%22%230E7A5F%22%2C%20%22lang%22%3A%20%22ja%22%7D">
+<title>ボキトレイン</title>
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#0E7A5F">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -59,11 +59,11 @@
   .screen.on{display:flex}
 
   /* home */
-  .brand{display:flex; align-items:flex-end; justify-content:space-between; padding:24px 4px 6px}
+  .brand{display:flex; align-items:flex-end; justify-content:space-between; padding:18px 4px 4px}
   .brand .eyebrow{font-size:11px; letter-spacing:.18em; color:var(--accent); font-weight:700}
-  .brand h1{margin:2px 0 0; font-size:28px; font-weight:700}
+  .brand h1{margin:0; font-size:24px; font-weight:700; line-height:1.3}
   .brand h1 small{font-size:13px; color:var(--ink-soft); font-weight:500; margin-left:4px}
-  .iconbtn{width:40px; height:40px; border-radius:12px; background:var(--surface); border:1px solid var(--line); font-size:18px; display:grid; place-items:center; flex:none}
+  .iconbtn{width:48px; height:48px; border-radius:12px; background:var(--surface); border:1px solid var(--line); font-size:18px; display:grid; place-items:center; flex:none}
   .today{background:var(--accent); color:var(--accent-ink); border-radius:18px; padding:16px 18px; margin-top:12px; box-shadow:var(--shadow)}
   .today .t{font-size:12px; letter-spacing:.12em; opacity:.85; font-weight:700}
   .today .row{display:flex; gap:18px; margin-top:6px}
@@ -89,10 +89,60 @@
   .drill p{margin:0; font-size:12px; color:var(--ink-soft)}
   .drill .done{font-size:12px; color:var(--ok-ink); flex:none}
   .foot{margin-top:auto; padding:26px 4px 12px; font-size:11.5px; color:var(--ink-soft)}
+  .tabpane{display:none} .tabpane.on{display:block}
+  .teaser{width:100%; margin-top:10px; background:var(--surface); border:1px solid var(--line); border-radius:14px; padding:12px 14px; text-align:left; display:flex; align-items:center; gap:10px}
+  .teaser .tg{font-size:11px; color:var(--accent); font-weight:700; letter-spacing:.04em; flex:none; max-width:96px; line-height:1.3}
+  .teaser b{font-size:13.5px; font-weight:500; flex:1; line-height:1.4}
+  .teaser .arr{color:var(--ink-soft); flex:none; font-size:13px}
+  .collect{display:flex; align-items:center; gap:10px; background:var(--surface); border:1px solid var(--line); border-radius:14px; padding:10px 14px; margin-bottom:10px; font-size:13px}
+  .collect .dots{display:flex; gap:6px}
+  .collect .dot{width:14px; height:14px; border-radius:99px; border:2px solid var(--line)}
+  .collect .dot.on{background:var(--accent); border-color:var(--accent)}
+  .collect .msg{flex:1; color:var(--ink-soft)}
+  .collect.all{background:var(--accent-soft); border-color:transparent} .collect.all .msg{color:var(--accent); font-weight:700}
+  .tabbar{display:none; flex:1; background:var(--surface); border:1px solid var(--line); border-radius:16px; box-shadow:var(--shadow); height:56px; padding:4px}
+  .tabbar button{flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:1px; font-size:10.5px; color:var(--ink-soft); border-radius:12px; font-weight:500}
+  .tabbar button .ic{font-size:17px; line-height:1}
+  .tabbar button.sel{color:var(--accent); background:var(--accent-soft); font-weight:700}
+  body.home .tabbar{display:flex} body.home .cta, body.home .fab{display:none}
+  .teaser.drillnext{background:var(--accent-soft); border-color:transparent}
+  .teaser.drillnext .tg{color:var(--accent)} .teaser.drillnext b{font-weight:700}
+  .teaser.drillnext .arr{color:var(--accent); font-weight:700}
+  .a2hs{margin-top:14px; display:flex; align-items:center; gap:8px; font-size:12px; color:var(--ink-soft); background:var(--surface); border:1px dashed var(--line); border-radius:12px; padding:8px 8px 8px 12px}
+  .a2hs span{flex:1} .a2hs button{min-width:44px; min-height:36px; border-radius:8px; color:var(--accent); font-weight:700}
+  .btn2.accent{background:var(--accent); color:var(--accent-ink); border-color:transparent; margin:0 0 10px}
+  .legend{display:flex; gap:14px; font-size:11px; color:var(--ink-soft); margin-bottom:8px}
+  .legend span{display:flex; align-items:center; gap:4px}
+  .lg{display:inline-block; width:10px; height:10px; border-radius:99px; border:1.5px solid var(--line)}
+  .lg1{background:var(--accent-soft); border-color:var(--accent)} .lg2{background:var(--accent); border-color:var(--accent)}
+  .tchip.s0{border-style:dashed} .tchip.s0 .n span{color:var(--ink-soft)}
+  .tchip.s2{border-color:var(--accent)}
+  .tchip .st{font-size:10px; color:var(--ink-soft); font-weight:400}
+  .collect{flex-wrap:wrap}
+  .figs{display:grid; grid-template-columns:repeat(4,1fr); gap:8px; width:100%}
+  .fig{border:1.5px dashed var(--line); border-radius:10px; padding:8px 4px; text-align:center; font-size:10.5px; color:var(--ink-soft); line-height:1.3}
+  .fig .ico{display:block; font-size:18px; margin-bottom:2px; opacity:.35}
+  .fig.on{border:1.5px solid var(--accent); background:var(--accent-soft); color:var(--accent); font-weight:700}
+  .fig.on .ico{opacity:1}
+  .collect .msg{width:100%; margin-top:6px; font-size:12px}
+  .week{display:grid; grid-template-columns:repeat(7,1fr); gap:6px; margin-bottom:10px}
+  .day{background:var(--surface); border:1px solid var(--line); border-radius:10px; padding:6px 0; text-align:center; font-size:11px; color:var(--ink-soft)}
+  .day .m{display:block; font-size:16px; line-height:1.2; margin-top:2px}
+  .day.on{border-color:var(--accent); color:var(--accent); font-weight:700}
+  .day.today{background:var(--surface2)}
+  .statrow{display:flex; gap:10px}
+  .stat{flex:1; background:var(--surface); border:1px solid var(--line); border-radius:12px; padding:8px 12px}
+  .stat .v{font-size:20px; font-weight:600} .stat .k{font-size:11px; color:var(--ink-soft)}
+  .setrow.link{width:100%; text-align:left; min-height:48px; color:var(--accent); font-weight:500}
+  .setrow.link.danger{color:var(--ng-ink)}
+  .drill .cont{font-size:11px; color:var(--warn); flex:none; font-weight:700}
+  .how{font-size:14px; margin:6px 0} ol.how{padding-left:20px} ol.how li{margin:4px 0}
+  .how.small{font-size:12px; color:var(--ink-soft)}
+  #pane-record .foot{margin-top:0; padding:0 0 12px}
 
   /* drill header */
   .dhead{display:flex; align-items:center; gap:12px; padding:14px 0 10px; position:sticky; top:0; background:var(--bg); z-index:5}
-  .backbtn{width:40px; height:40px; border-radius:12px; background:var(--surface); border:1px solid var(--line); font-size:18px; flex:none; display:grid; place-items:center}
+  .backbtn{width:48px; height:48px; border-radius:12px; background:var(--surface); border:1px solid var(--line); font-size:18px; flex:none; display:grid; place-items:center}
   .pbar{flex:1; height:8px; border-radius:99px; background:var(--surface2); overflow:hidden}
   .pbar>div{height:100%; background:var(--accent); border-radius:99px; transition:width .3s}
   .pcount{font-size:12px; color:var(--ink-soft); flex:none}
@@ -130,7 +180,7 @@
   .fb .report{font-size:11px; color:var(--ink-soft); text-decoration:underline; margin-top:8px; min-height:32px}
   .today .go.resume{background:var(--accent-soft); color:var(--accent); margin-top:8px}
   .blank.active{cursor:pointer}
-  .closex{position:absolute; right:14px; top:10px; width:36px; height:36px; border-radius:10px; background:var(--surface2); font-size:16px; display:grid; place-items:center}
+  .closex{position:absolute; right:8px; top:4px; width:44px; height:44px; border-radius:10px; background:var(--surface2); font-size:16px; display:grid; place-items:center}
   .sheet{outline:none}
   .sheet .inner{position:relative}
   #toast{position:fixed; left:50%; bottom:calc(84px + env(safe-area-inset-bottom)); transform:translateX(-50%) translateY(20px); background:var(--ink); color:var(--bg); padding:10px 16px; border-radius:12px; font-size:13px; opacity:0; pointer-events:none; transition:.25s; z-index:40; max-width:90vw; text-align:center}
@@ -172,7 +222,6 @@
   .seg{display:flex; background:var(--surface2); border-radius:10px; padding:3px; gap:2px}
   .seg button{padding:6px 10px; border-radius:8px; font-size:13px; min-height:36px}
   .seg button.sel{background:var(--surface); box-shadow:0 1px 4px rgba(0,0,0,.12); font-weight:700; color:var(--accent)}
-  .danger{color:var(--ng-ink); font-size:13px; padding:12px 0}
 
   /* numpad */
   .npdisp{background:var(--surface2); border:1px solid var(--line); border-radius:12px; padding:8px 14px; text-align:right; margin-bottom:10px}
@@ -220,34 +269,68 @@
   <section class="screen on" id="scr-home">
     <div class="brand">
       <div>
-        <div class="eyebrow">簿記2級 · 電車モード</div>
-        <h1>ボキトレ<small>（仮称）</small></h1>
+        <div class="eyebrow">簿記2級 · 一駅一問</div>
+        <h1>ボキトレイン</h1>
       </div>
-      <button class="iconbtn" id="btn-settings" aria-label="設定">⚙</button>
     </div>
 
-    <div class="today">
-      <div class="t">きょう</div>
-      <div class="row">
-        <div><div class="v num" id="h-due">0</div><div class="k">復習待ち</div></div>
-        <div><div class="v num" id="h-today">0</div><div class="k">きょう答えた</div></div>
-        <div><div class="v num" id="h-days">0</div><div class="k">連続日数</div></div>
+    <div class="tabpane on" id="pane-today">
+      <div class="today">
+        <div class="t">きょう</div>
+        <div class="row">
+          <div><div class="v num" id="h-due">0</div><div class="k">復習待ち</div></div>
+          <div><div class="v num" id="h-new">0</div><div class="k">新規</div></div>
+          <div><div class="v num" id="h-today">0</div><div class="k">きょう答えた</div></div>
+        </div>
+        <button class="go" id="btn-today">きょうの学習を始める</button>
+        <button class="go resume" id="btn-resume" hidden>前回の続きから</button>
       </div>
-      <button class="go" id="btn-today">きょうの学習を始める</button>
-      <button class="go resume" id="btn-resume" hidden>前回の続きから</button>
+      <button class="teaser" id="h-teaser-map"><span class="tg">論点</span><b id="h-teaser-map-t"></b><span class="arr">→</span></button>
+      <button class="teaser drillnext" id="h-next-drill"><span class="tg">下書き用紙を、画面に</span><b id="h-next-drill-t"></b><span class="arr" id="h-next-drill-a">始める →</span></button>
+      <button class="teaser" id="h-teaser-week"><span class="tg">今週</span><b id="h-teaser-week-t"></b><span class="arr">→</span></button>
+      <div class="a2hs" id="a2hs" hidden><span>電車ですぐ1問。ホーム画面に追加できます</span><button id="a2hs-how">方法</button><button id="a2hs-no" aria-label="閉じる">✕</button></div>
     </div>
 
-    <div class="sec">
-      <h2>論点マップ <span id="h-mapnote"></span></h2>
-      <div class="tmap" id="h-tmap"></div>
+    <div class="tabpane" id="pane-map">
+      <div class="sec">
+        <h2>論点マップ <span id="h-mapnote"></span></h2>
+        <button class="btn2 accent" id="btn-next-topic">次の未踏論点を解く</button>
+        <div class="legend"><span><i class="lg lg0"></i>未踏</span><span><i class="lg lg1"></i>着手</span><span><i class="lg lg2"></i>定着</span></div>
+        <div class="tmap" id="h-tmap"></div>
+      </div>
     </div>
 
-    <div class="sec">
-      <h2>計算ドリル <span>ボックス図・分析図を画面で埋める</span></h2>
-      <div class="drills" id="h-drills"></div>
+    <div class="tabpane" id="pane-drills">
+      <div class="sec">
+        <h2>下書き用紙を、画面に <span>空欄をタップして埋める</span></h2>
+        <div class="collect" id="h-collect"></div>
+        <div class="drills" id="h-drills"></div>
+      </div>
     </div>
 
-    <div class="foot" id="h-foot"></div>
+    <div class="tabpane" id="pane-record">
+      <div class="sec">
+        <h2>今週 <span id="h-weeknote"></span></h2>
+        <div class="week" id="h-week"></div>
+        <div class="statrow">
+          <div class="stat"><div class="v num" id="r-streak">0</div><div class="k">連続日数</div></div>
+          <div class="stat"><div class="v num" id="r-total">0</div><div class="k">累計回答</div></div>
+          <div class="stat"><div class="v num" id="r-mastered">0</div><div class="k">定着論点</div></div>
+        </div>
+      </div>
+      <div class="sec">
+        <h2>設定</h2>
+        <div class="setrow"><span>出題する分野</span><div class="seg" data-set="cat"><button data-v="both">両方</button><button data-v="商業">商業</button><button data-v="工業">工業</button></div></div>
+        <div class="setrow"><span>1回の問題数</span><div class="seg" data-set="n"><button data-v="3">一駅3</button><button data-v="5">5</button><button data-v="10">10</button><button data-v="20">20</button></div></div>
+        <div class="setrow"><span>テーマ</span><div class="seg" data-set="theme"><button data-v="system">自動</button><button data-v="light">ライト</button><button data-v="dark">ダーク</button></div></div>
+        <button class="setrow link" id="btn-a2hs">ホーム画面に追加する方法</button>
+        <button class="setrow link danger" id="btn-reset">学習データをリセット</button>
+      </div>
+      <div class="sec">
+        <h2>このアプリについて</h2>
+        <div class="foot" id="h-foot"></div>
+      </div>
+    </div>
   </section>
 
   <section class="screen" id="scr-quiz">
@@ -303,6 +386,12 @@
 <div class="actionbar"><div class="inner">
   <button class="fab" id="fab-calc" aria-label="電卓とメモを開く">🖩</button>
   <button class="cta" id="cta" disabled>判定する</button>
+  <nav class="tabbar" id="tabbar" aria-label="メニュー">
+    <button data-tab="today"><span class="ic">🚃</span>きょう</button>
+    <button data-tab="map"><span class="ic">🗺</span>論点</button>
+    <button data-tab="drills"><span class="ic">✏️</span>ドリル</button>
+    <button data-tab="record"><span class="ic">📓</span>記録</button>
+  </nav>
 </div></div>
 
 <div class="scrim" id="scrim"></div>
@@ -340,12 +429,10 @@
   </div>
 </div>
 
-<div class="sheet" id="sheet-set" role="dialog" aria-label="設定">
-  <div class="inner"><div class="grabber"></div><button class="closex" aria-label="閉じる">✕</button><h3>設定</h3>
-    <div class="setrow"><span>出題する分野</span><div class="seg" data-set="cat"><button data-v="both">両方</button><button data-v="商業">商業</button><button data-v="工業">工業</button></div></div>
-    <div class="setrow"><span>1回の問題数</span><div class="seg" data-set="n"><button data-v="3">一駅3</button><button data-v="5">5</button><button data-v="10">10</button><button data-v="20">20</button></div></div>
-    <div class="setrow"><span>テーマ</span><div class="seg" data-set="theme"><button data-v="system">自動</button><button data-v="light">ライト</button><button data-v="dark">ダーク</button></div></div>
-    <button class="danger" id="btn-reset">学習データをリセット（2回タップ）</button>
+<div class="sheet" id="sheet-a2hs" role="dialog" aria-label="ホーム画面に追加">
+  <div class="inner"><div class="grabber"></div><button class="closex" aria-label="閉じる">✕</button><h3>ホーム画面に追加</h3>
+    <div id="a2hs-ios"><p class="how">iPhone / iPad（Safari）</p><ol class="how"><li>下の <b>共有</b> ボタン（□に↑）をタップ</li><li><b>「ホーム画面に追加」</b> を選ぶ</li><li>右上の <b>追加</b></li></ol><p class="how small">アプリのように全画面で開き、アドレスバーが消えます。</p></div>
+    <div id="a2hs-and"><p class="how">Android（Chrome）</p><button class="btn2 accent" id="a2hs-install" hidden>ホーム画面に追加</button><ol class="how" id="a2hs-and-manual"><li>右上の <b>⋮</b> メニュー</li><li><b>「ホーム画面に追加」</b>（または「アプリをインストール」）</li></ol></div>
   </div>
 </div>
 
@@ -431,15 +518,42 @@ function inCat(p){ return settings.cat === "both" || p.cat === settings.cat; }
 
 /* ================= screens ================= */
 let mode = "home";
-function show(name){
+function show(name, opt){
+  opt = opt || {};
+  if(!opt.fromPop && name !== "home"){
+    try{ if(opt.replace) history.replaceState({v:name}, ""); else history.pushState({v:name}, ""); }catch(e){}
+  }
   mode = name;
   document.querySelectorAll(".screen").forEach(s => s.classList.remove("on"));
   $("#scr-"+name).classList.add("on");
   window.scrollTo(0,0);
   updateCta();
+  document.body.classList.toggle("home", name === "home");
   if(name === "home") renderHome();
 }
-document.querySelectorAll("[data-home]").forEach(b => b.addEventListener("click", () => show("home")));
+function goHome(){
+  if(mode === "quiz" && !answered && (entry.debit.length || entry.credit.length)) toast("続きを保存しました");
+  if(history.state && history.state.v === mode && mode !== "home") history.back(); else show("home", {fromPop:true});
+}
+try{ history.replaceState({v:"home"}, ""); }catch(e){}
+window.addEventListener("popstate", e => {
+  if(openSheetEl) closeSheet();
+  const st = e.state || {v:"home"};
+  if(st.v === "home" && mode !== "home") show("home", {fromPop:true});
+});
+document.querySelectorAll("[data-home]").forEach(b => b.addEventListener("click", goHome));
+
+/* ================= home tabs ================= */
+let tab = "today";
+function setTab(name){
+  tab = name;
+  document.querySelectorAll(".tabpane").forEach(p => p.classList.toggle("on", p.id === "pane-" + tab));
+  document.querySelectorAll("#tabbar button").forEach(b => b.classList.toggle("sel", b.dataset.tab === tab));
+  window.scrollTo(0,0);
+}
+document.querySelectorAll("#tabbar button").forEach(b => b.addEventListener("click", () => setTab(b.dataset.tab)));
+$("#h-teaser-map").addEventListener("click", () => setTab("map"));
+$("#h-teaser-week").addEventListener("click", () => setTab("record"));
 
 /* ================= home ================= */
 function topicStats(){
@@ -454,45 +568,95 @@ function topicStats(){
   const order = k => { const [cat, t] = k.split("|"); const i = (TOPIC_ORDER[cat]||[]).indexOf(t); return (cat === "商業" ? 0 : 100) + (i < 0 ? 50 : i); };
   return Object.keys(m).sort((a,b) => order(a) - order(b)).map(k => m[k]);
 }
+function topicState(st){ return st.boxSum / (st.n * 5) >= 0.6 ? 2 : (st.seen ? 1 : 0); }
+function nextDrill(){ return DRILLS.find(d => !drillDone[d.id]) || null; }
+function weekDays(){ // 月〜日
+  const t = todayStr(); const d = new Date(t + "T00:00:00"); const dow = (d.getDay() + 6) % 7;
+  return Array.from({length:7}, (_, i) => addDays(t, i - dow));
+}
 function renderHome(){
   const t = todayStr();
   const due = dueList().filter(inCat);
-  $("#h-due").textContent = due.length;
-  $("#h-today").textContent = nn(days[t]);
-  $("#h-days").textContent = streakDays();
   const pool = PROBLEMS.filter(inCat);
   const fresh = pool.filter(p => !progress[p.id] || !progress[p.id].seen).length;
   const nRev = Math.min(due.length, settings.n), nNew = Math.min(fresh, settings.n - nRev);
-  $("#btn-today").textContent = (nRev + nNew) ? "きょうの学習を始める（復習" + nRev + "・新規" + nNew + "）" : "復習待ちなし · 定着の低い順にもう一周";
+  $("#h-due").textContent = due.length; $("#h-new").textContent = fresh; $("#h-today").textContent = nn(days[t]);
   const ss = savedSession();
   $("#btn-resume").hidden = !ss;
   if(ss) $("#btn-resume").textContent = "前回の続きから（" + (ss.qi + 1) + "/" + ss.queue.length + "）";
+  $("#btn-today").textContent = (nRev + nNew) ? "復習 " + nRev + " 問＋新規 " + nNew + " 問を始める" : "復習待ちなし · 定着の低い順にもう一周";
+  $("#btn-today").className = "go" + (ss ? " resume" : ""); $("#btn-resume").className = "go";
 
+  // 論点の3状態
+  const stats = topicStats().filter(st => settings.cat === "both" || st.cat === settings.cat);
+  const cnt = [0,0,0]; stats.forEach(st => cnt[topicState(st)]++);
+  $("#h-teaser-map-t").textContent = "未踏 " + cnt[0] + " · 着手 " + cnt[1] + " · 定着 " + cnt[2];
+  $("#h-mapnote").textContent = cnt[0] ? "1周目：残り " + cnt[0] + " 論点" : (cnt[1] ? "2周目：定着まで残り " + cnt[1] : "全論点定着！");
+  $("#btn-next-topic").hidden = !cnt[0];
   const map = $("#h-tmap"); map.innerHTML = "";
-  let mastered = 0, total = 0;
-  for(const s of topicStats()){
-    if(settings.cat !== "both" && s.cat !== settings.cat) continue;
-    const pct = Math.round(s.boxSum / (s.n * 5) * 100);
-    total += s.n; mastered += s.boxSum / 5;
-    const b = document.createElement("button"); b.className = "tchip";
-    b.innerHTML = '<div class="n"><span>' + esc(s.topic) + '</span><small class="num">' + s.seen + '/' + s.n + '</small></div><div class="bar"><div style="width:' + pct + '%"></div></div>';
-    b.addEventListener("click", () => startSession("topic", {cat:s.cat, topic:s.topic}));
+  for(const st of stats){
+    const state = topicState(st), pct = Math.round(st.boxSum / (st.n * 5) * 100);
+    const b = document.createElement("button"); b.className = "tchip s" + state;
+    b.innerHTML = '<div class="n"><span>' + esc(st.topic) + '</span><small class="num">' + st.seen + '/' + st.n + '</small></div><div class="bar"><div style="width:' + pct + '%"></div></div><span class="st">' + ["未踏","着手 " + pct + "%","定着 " + pct + "%"][state] + '</span>';
+    b.addEventListener("click", () => startSession("topic", {cat:st.cat, topic:st.topic}));
     map.appendChild(b);
   }
-  $("#h-mapnote").textContent = "定着率 " + (total ? Math.round(mastered / total * 100) : 0) + "%（数字は着手/問題数）";
 
+  // ドリル：次の1本と図コレクション
+  const nd = nextDrill(), dp = drillPos();
+  const nDone = DRILLS.filter(d => drillDone[d.id]).length;
+  if(dp){ const dd = DRILLS.find(d => d.id === dp.id); $("#h-next-drill-t").textContent = "続き " + dd.title + "（" + (dp.bi + 1) + "/" + dd.steps.length + "）"; $("#h-next-drill-a").textContent = "続ける →"; }
+  else if(nd){ $("#h-next-drill-t").textContent = "次は " + nd.title; $("#h-next-drill-a").textContent = "始める →"; }
+  else { $("#h-next-drill-t").textContent = "4つの計算図、全部そろいました"; $("#h-next-drill-a").textContent = "もう一度 →"; }
+  const col = $("#h-collect");
+  col.className = "collect" + (nDone === DRILLS.length ? " all" : "");
+  const icons = {D1:"▦", D2:"▤", D3:"◫", D4:"◩"};
+  col.innerHTML = '<div class="figs">' + DRILLS.map(d => '<div class="fig' + (drillDone[d.id] ? ' on' : '') + '"><span class="ico">' + (icons[d.id] || "▦") + '</span>' + esc(d.title.replace(/^.*・/, "")) + '</div>').join("") + '</div><span class="msg">' + (nDone === DRILLS.length ? "全部そろった！称号「下書きゼロ」" : "計算図コレクション 残り " + (DRILLS.length - nDone) + " 図") + '</span>';
   const dl = $("#h-drills"); dl.innerHTML = "";
   for(const d of DRILLS){
     const b = document.createElement("button"); b.className = "drill";
-    b.innerHTML = '<span class="tag">' + esc(d.tag) + '</span><div class="body"><h3>' + esc(d.title) + '</h3><p>' + esc(d.sub) + '</p></div>' + (drillDone[d.id] ? '<span class="done">✓ ' + nn(drillDone[d.id]) + '回</span>' : '');
+    const badge = dp && dp.id === d.id ? '<span class="cont">続きから</span>' : (drillDone[d.id] ? '<span class="done">✓ ' + nn(drillDone[d.id]) + '回</span>' : '');
+    b.innerHTML = '<span class="tag">' + esc(d.tag) + '</span><div class="body"><h3>' + esc(d.title) + '</h3><p>' + esc(d.sub) + '</p></div>' + badge;
     b.addEventListener("click", () => startDrill(d.id));
     dl.appendChild(b);
   }
+
+  // 今週・記録
+  const wk = weekDays(), studied = wk.filter(d => days[d]).length, wkAns = wk.reduce((a, d) => a + nn(days[d]), 0);
+  $("#h-teaser-week-t").textContent = studied + " 日 · " + wkAns + " 問" + (studied < 3 ? " · 週3日まであと " + (3 - studied) : " · 週3日クリア");
+  $("#h-weeknote").textContent = studied >= 3 ? "週3日クリア" : "あと " + (3 - studied) + " 日で週3日";
+  $("#h-week").innerHTML = wk.map((d, i) => '<div class="day' + (days[d] ? ' on' : '') + (d === t ? ' today' : '') + '">' + "月火水木金土日"[i] + '<span class="m">' + (days[d] ? "🚉" : "·") + '</span></div>').join("");
+  $("#r-streak").textContent = streakDays();
+  $("#r-total").textContent = Object.values(days).reduce((a, b) => a + nn(b), 0);
+  $("#r-mastered").textContent = cnt[2] + "/" + stats.length;
+  renderSettings();
   const nS = PROBLEMS.filter(p => p.cat === "商業").length, nK = PROBLEMS.filter(p => p.cat === "工業").length;
-  $("#h-foot").innerHTML = "仕訳 " + (nS + nK) + " 問（商業 " + nS + "・工業 " + nK + "）＋計算ドリル " + DRILLS.length + " 本。問題はすべてオリジナル、2026年度の出題区分に準拠。<br>正解した問題は 1→3→7→14→30日後に復習へ回ります。右下の 🖩 で電卓とメモ。";
+  $("#h-foot").innerHTML = "ボキトレイン（β）— 仕訳 " + (nS + nK) + " 問（商業 " + nS + "・工業 " + nK + "）＋計算ドリル " + DRILLS.length + " 本。問題はすべてオリジナル、2026年度の出題区分に準拠。<br>正解した問題は 1→3→7→14→30日後に復習へ回ります。不正解は翌日。学習記録はこの端末にだけ保存されます。";
+  // ホーム画面追加の案内（初回セッション完了後、非インストール時、30日は再表示しない）
+  const standalone = window.matchMedia("(display-mode: standalone)").matches || navigator.standalone === true;
+  const dismissed = store.get("a2hs", null);
+  $("#a2hs").hidden = standalone || !Object.keys(days).length || (typeof dismissed === "string" && addDays(dismissed, 30) > t);
+  setTab(tab);
 }
 $("#btn-today").addEventListener("click", () => startSession("today"));
 $("#btn-resume").addEventListener("click", resumeSession);
+$("#h-next-drill").addEventListener("click", () => { const dp = drillPos(); const nd = nextDrill(); startDrill(dp ? dp.id : (nd ? nd.id : DRILLS[0].id)); });
+$("#btn-next-topic").addEventListener("click", () => {
+  const st = topicStats().find(x => (settings.cat === "both" || x.cat === settings.cat) && topicState(x) === 0);
+  if(st) startSession("topic", {cat:st.cat, topic:st.topic});
+});
+$("#a2hs-no").addEventListener("click", () => { store.set("a2hs", todayStr()); $("#a2hs").hidden = true; });
+let deferredInstall = null;
+window.addEventListener("beforeinstallprompt", e => { e.preventDefault(); deferredInstall = e; });
+function openA2hs(){
+  const ios = /iPhone|iPad|iPod/.test(navigator.userAgent) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+  $("#a2hs-ios").hidden = !ios; $("#a2hs-and").hidden = ios;
+  $("#a2hs-install").hidden = !deferredInstall; $("#a2hs-and-manual").hidden = !!deferredInstall;
+  openSheet($("#sheet-a2hs"));
+}
+$("#a2hs-how").addEventListener("click", openA2hs);
+$("#btn-a2hs").addEventListener("click", openA2hs);
+$("#a2hs-install").addEventListener("click", async () => { if(!deferredInstall) return; deferredInstall.prompt(); await deferredInstall.userChoice.catch(() => {}); deferredInstall = null; closeSheet(); });
 
 /* ================= sheets ================= */
 const scrim = $("#scrim");
@@ -629,14 +793,13 @@ document.querySelectorAll(".seg button").forEach(b => b.addEventListener("click"
   settings[key] = key === "n" ? Number(b.dataset.v) : b.dataset.v;
   saveSettings(); renderSettings(); if(mode === "home") renderHome();
 }));
-$("#btn-settings").addEventListener("click", () => { renderSettings(); openSheet($("#sheet-set")); });
-let resetArmed = false;
 $("#btn-reset").addEventListener("click", () => {
-  if(!resetArmed){ resetArmed = true; $("#btn-reset").textContent = "本当にリセットする（もう一度タップ）"; setTimeout(() => { resetArmed = false; $("#btn-reset").textContent = "学習データをリセット（2回タップ）"; }, 3000); return; }
-  ["progress","days","drills","memo","session"].forEach(k => store.del(k));
-  progress = {}; days = {}; drillDone = {}; $("#memo").value = "";
-  resetArmed = false; $("#btn-reset").textContent = "学習データをリセット（2回タップ）";
-  closeSheet(); renderHome();
+  pickChip("復習の記録・学習日・ドリルのクリア・メモをすべて消します。元に戻せません。", ["リセットする","やめる"], v => {
+    if(v !== "リセットする") return;
+    ["progress","days","drills","drillpos","memo","session","a2hs"].forEach(k => store.del(k));
+    progress = {}; days = {}; drillDone = {}; $("#memo").value = "";
+    toast("学習データをリセットしました"); renderHome();
+  });
 });
 
 /* ================= session (仕訳) ================= */
@@ -768,12 +931,12 @@ function checkQ(){
 }
 function nextQ(){
   qi++;
-  if(qi >= queue.length){ clearSession(); renderResult(); show("result"); return; }
+  if(qi >= queue.length){ clearSession(); renderResult(); show("result", {replace:true}); return; }
   saveSession();
   renderQ();
 }
 $("#q-report").addEventListener("click", () => {
-  const p = curP(); const txt = "[ボキトレ 問題報告] " + p.id + " " + p.topic + "\n" + p.text;
+  const p = curP(); const txt = "[ボキトレイン 問題報告] " + p.id + " " + p.topic + "\n" + p.text;
   const done = () => toast("問題ID " + p.id + " をコピーしました。報告フォームは本実装で用意します");
   if(navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(txt).then(done, () => toast("ID: " + p.id));
   else toast("ID: " + p.id);
@@ -791,7 +954,7 @@ function renderResult(){
   $("#r-retry").onclick = () => startSession("retry", {ids: wr.map(x => x.id)});
   $("#r-share").onclick = () => {
     const tops = Object.keys(tm).slice(0, 3).join("・");
-    const text = "電車で片手、鉛筆なしで簿記2級。\nきょう " + ok + "/" + n + " 正解（" + tops + "）／連続 " + streakDays() + " 日\n#簿記2級 #ボキトレ";
+    const text = "電車で片手、鉛筆なしで簿記2級。\nきょう " + ok + "/" + n + " 正解（" + tops + "）／連続 " + streakDays() + " 日\n#簿記2級 #ボキトレイン";
     const url = APP_URL;
     if(navigator.share){ navigator.share({text, url}).catch(() => {}); return; }
     const full = text + "\n" + url;
@@ -802,12 +965,26 @@ function renderResult(){
 
 /* ================= guided drills ================= */
 let drill = null, bi = 0, bDone = false;
+function drillPos(){
+  const d = store.get("drillpos", null);
+  if(!isObj(d) || !DRILLS.some(x => x.id === d.id)) return null;
+  const dr = DRILLS.find(x => x.id === d.id); const b = nn(d.bi);
+  return b > 0 && b < dr.steps.length ? {id:d.id, bi:b} : null;
+}
 function startDrill(id){
   drill = DRILLS.find(d => d.id === id); bi = 0; bDone = false;
   $("#b-cat").textContent = drill.tag + " · " + drill.title;
   $("#b-text").innerHTML = drill.text;
   $("#b-boxes").innerHTML = drill.boxes;
   $("#b-fb").className = "fb"; $("#b-hint").className = "hint"; $("#b-step").style.display = "";
+  const dp = drillPos();
+  if(dp && dp.id === id){   // 途中から再開：埋めた欄を復元
+    bi = dp.bi;
+    for(const st of drill.steps.slice(0, bi)){
+      const target = document.querySelector('#b-boxes .blank[data-blank="' + st.key + '"]');
+      if(target){ target.textContent = fmtAns(st); target.className = "blank done num"; }
+    }
+  } else store.set("drillpos", {id, bi:0});
   show("drill"); renderB();
 }
 function renderB(){
@@ -828,8 +1005,9 @@ function stepResult(s, v){
     const target = document.querySelector('#b-boxes .blank[data-blank="' + s.key + '"]');
     if(target){ target.textContent = fmtAns(s); target.className = "blank done num"; }
     bi++;
+    store.set("drillpos", {id:drill.id, bi});
     if(bi >= drill.steps.length){
-      bDone = true; $("#b-prog").style.width = "100%";
+      bDone = true; $("#b-prog").style.width = "100%"; store.del("drillpos");
       drillDone[drill.id] = nn(drillDone[drill.id]) + 1; store.set("drills", drillDone);
       const t = todayStr(); days[t] = nn(days[t]) + 1; store.set("days", days);
       const fb = $("#b-fb"); fb.className = "fb on good";
@@ -864,12 +1042,13 @@ function updateCta(){
 }
 cta.addEventListener("click", () => {
   if(mode === "quiz"){ answered ? nextQ() : checkQ(); }
-  else if(mode === "drill"){ bDone ? show("home") : answerB(); }
-  else if(mode === "result"){ show("home"); }
+  else if(mode === "drill"){ bDone ? goHome() : answerB(); }
+  else if(mode === "result"){ goHome(); }
   else { startSession("today"); }
 });
 
 applyTheme();
+document.body.classList.add("home");
 renderHome();
 updateCta();
 </script>
