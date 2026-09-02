@@ -1,105 +1,110 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
 <meta charset="utf-8">
+<meta name="description" content="簿記2級の仕訳と原価計算を、電車で片手で。電卓とメモ常駐の演習アプリ。">
+<meta property="og:title" content="ボキトレ（仮称）— 電車で片手、鉛筆なしで簿記2級">
+<meta property="og:description" content="仕訳60問＋ボックス図で解く原価計算。下書き用紙を画面にしました。電卓とメモは常駐、復習は忘却曲線で自動。">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://nekoze32.github.io/boki2-trainer/">
+<meta name="twitter:card" content="summary">
+<link rel="manifest" href="data:application/manifest+json,%7B%22name%22%3A%20%22%E3%83%9C%E3%82%AD%E3%83%88%E3%83%AC%22%2C%20%22short_name%22%3A%20%22%E3%83%9C%E3%82%AD%E3%83%88%E3%83%AC%22%2C%20%22start_url%22%3A%20%22.%22%2C%20%22display%22%3A%20%22standalone%22%2C%20%22background_color%22%3A%20%22%23F6F7F4%22%2C%20%22theme_color%22%3A%20%22%230E7A5F%22%2C%20%22lang%22%3A%20%22ja%22%7D">
 <title>ボキトレ</title>
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0E7A5F">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@500;700&family=Zen+Kaku+Gothic+New:wght@400;500;700&family=IBM+Plex+Mono:wght@500;600&display=swap">
 <style>
   :root{
-    --bg:#F6F7F4;
-    --surface:#FFFFFF;
-    --surface2:#EEF1EB;
-    --ink:#20302A;
-    --ink-soft:#5C6B63;
-    --line:#D8DED6;
-    --accent:#0E7A5F;
-    --accent-ink:#FFFFFF;
-    --accent-soft:#DCEEE7;
-    --debit:#2E5AAC;
-    --credit:#A8542F;
+    --bg:#F6F7F4; --surface:#FFFFFF; --surface2:#EEF1EB;
+    --ink:#20302A; --ink-soft:#5C6B63; --line:#D8DED6;
+    --accent:#0E7A5F; --accent-ink:#FFFFFF; --accent-soft:#DCEEE7;
+    --debit:#2E5AAC; --credit:#A8542F;
     --ok-bg:#E3F2E9; --ok-ink:#1B6B45; --ok-line:#9CCDB2;
     --ng-bg:#FBE9E7; --ng-ink:#B03A2E; --ng-line:#E5B0A8;
+    --warn:#B7791F;
     --shadow:0 6px 24px rgba(32,48,42,.10);
   }
   @media (prefers-color-scheme: dark){
     :root:not([data-theme="light"]){
-      --bg:#131916;
-      --surface:#1C2420;
-      --surface2:#232D28;
-      --ink:#E4EAE6;
-      --ink-soft:#96A59D;
-      --line:#33403A;
-      --accent:#3FBF97;
-      --accent-ink:#0D1512;
-      --accent-soft:#1E3A32;
-      --debit:#7FA7E8;
-      --credit:#E39A72;
+      --bg:#131916; --surface:#1C2420; --surface2:#232D28;
+      --ink:#E4EAE6; --ink-soft:#96A59D; --line:#33403A;
+      --accent:#3FBF97; --accent-ink:#0D1512; --accent-soft:#1E3A32;
+      --debit:#7FA7E8; --credit:#E39A72;
       --ok-bg:#1D3327; --ok-ink:#7FD6A4; --ok-line:#2F5C43;
       --ng-bg:#3A211E; --ng-ink:#F0968B; --ng-line:#6B342E;
+      --warn:#E0B15A;
       --shadow:0 6px 24px rgba(0,0,0,.4);
     }
   }
   :root[data-theme="dark"]{
-    --bg:#131916;
-    --surface:#1C2420;
-    --surface2:#232D28;
-    --ink:#E4EAE6;
-    --ink-soft:#96A59D;
-    --line:#33403A;
-    --accent:#3FBF97;
-    --accent-ink:#0D1512;
-    --accent-soft:#1E3A32;
-    --debit:#7FA7E8;
-    --credit:#E39A72;
+    --bg:#131916; --surface:#1C2420; --surface2:#232D28;
+    --ink:#E4EAE6; --ink-soft:#96A59D; --line:#33403A;
+    --accent:#3FBF97; --accent-ink:#0D1512; --accent-soft:#1E3A32;
+    --debit:#7FA7E8; --credit:#E39A72;
     --ok-bg:#1D3327; --ok-ink:#7FD6A4; --ok-line:#2F5C43;
     --ng-bg:#3A211E; --ng-ink:#F0968B; --ng-line:#6B342E;
+    --warn:#E0B15A;
     --shadow:0 6px 24px rgba(0,0,0,.4);
   }
   *{box-sizing:border-box; -webkit-tap-highlight-color:transparent}
   html,body{margin:0; padding:0}
-  body{
-    background:var(--bg); color:var(--ink);
-    font-family:"Zen Kaku Gothic New", "Hiragino Kaku Gothic ProN", "Yu Gothic", sans-serif;
-    font-size:15px; line-height:1.7;
-  }
-  .num{font-family:"IBM Plex Mono", ui-monospace, monospace; font-variant-numeric:tabular-nums}
+  body{background:var(--bg); color:var(--ink); font-family:"Zen Kaku Gothic New","Hiragino Kaku Gothic ProN","Yu Gothic",sans-serif; font-size:15px; line-height:1.7}
+  .num{font-family:"IBM Plex Mono",ui-monospace,monospace; font-variant-numeric:tabular-nums}
   h1,h2,h3,.disp{font-family:"Zen Maru Gothic","Zen Kaku Gothic New",sans-serif; text-wrap:balance}
   button{font-family:inherit; font-size:inherit; color:inherit; background:none; border:none; padding:0; cursor:pointer}
-  button:focus-visible, [tabindex]:focus-visible{outline:2px solid var(--accent); outline-offset:2px}
-
+  button:focus-visible,[tabindex]:focus-visible{outline:2px solid var(--accent); outline-offset:2px}
   #app{max-width:480px; margin:0 auto; min-height:100dvh; display:flex; flex-direction:column; padding:0 16px calc(96px + env(safe-area-inset-bottom))}
   .screen{display:none; flex-direction:column; flex:1}
   .screen.on{display:flex}
 
-  /* ---------- home ---------- */
-  .brand{padding:28px 4px 6px}
+  /* home */
+  .brand{display:flex; align-items:flex-end; justify-content:space-between; padding:24px 4px 6px}
   .brand .eyebrow{font-size:11px; letter-spacing:.18em; color:var(--accent); font-weight:700}
-  .brand h1{margin:2px 0 0; font-size:30px; font-weight:700}
-  .brand p{margin:6px 0 0; color:var(--ink-soft); font-size:13px}
-  .statrow{display:flex; gap:10px; margin:18px 0 6px}
-  .stat{flex:1; background:var(--surface); border:1px solid var(--line); border-radius:14px; padding:10px 14px}
-  .stat .v{font-size:22px; font-weight:600}
-  .stat .k{font-size:11px; color:var(--ink-soft); letter-spacing:.08em}
-  .drills{display:flex; flex-direction:column; gap:12px; margin-top:14px}
-  .drill{background:var(--surface); border:1px solid var(--line); border-radius:18px; padding:18px; text-align:left; box-shadow:var(--shadow); display:block; width:100%}
-  .drill:active{transform:scale(.985)}
-  .drill .tag{display:inline-block; font-size:11px; font-weight:700; letter-spacing:.1em; padding:2px 10px; border-radius:99px; background:var(--accent-soft); color:var(--accent)}
-  .drill h2{margin:8px 0 4px; font-size:19px}
-  .drill p{margin:0; font-size:13px; color:var(--ink-soft)}
+  .brand h1{margin:2px 0 0; font-size:28px; font-weight:700}
+  .brand h1 small{font-size:13px; color:var(--ink-soft); font-weight:500; margin-left:4px}
+  .iconbtn{width:40px; height:40px; border-radius:12px; background:var(--surface); border:1px solid var(--line); font-size:18px; display:grid; place-items:center; flex:none}
+  .today{background:var(--accent); color:var(--accent-ink); border-radius:18px; padding:16px 18px; margin-top:12px; box-shadow:var(--shadow)}
+  .today .t{font-size:12px; letter-spacing:.12em; opacity:.85; font-weight:700}
+  .today .row{display:flex; gap:18px; margin-top:6px}
+  .today .row div{flex:1}
+  .today .v{font-size:26px; font-weight:600; line-height:1.2}
+  .today .k{font-size:11px; opacity:.85}
+  .today .go{margin-top:12px; width:100%; height:46px; border-radius:12px; background:var(--surface); color:var(--accent); font-weight:700; font-size:15px}
+  .sec{margin-top:20px}
+  .sec h2{margin:0 0 8px; font-size:14px; letter-spacing:.1em; color:var(--ink-soft); display:flex; justify-content:space-between; align-items:baseline}
+  .sec h2 span{font-weight:500; font-size:11px; letter-spacing:.04em}
+  .tmap{display:grid; grid-template-columns:repeat(2,1fr); gap:8px}
+  .tchip{background:var(--surface); border:1px solid var(--line); border-radius:12px; padding:9px 12px; text-align:left; min-height:52px}
+  .tchip .n{font-size:13px; font-weight:500; display:flex; justify-content:space-between}
+  .tchip .n small{color:var(--ink-soft); font-weight:400}
+  .tchip .bar{height:5px; border-radius:99px; background:var(--surface2); margin-top:6px; overflow:hidden}
+  .tchip .bar div{height:100%; background:var(--accent); border-radius:99px}
+  .drills{display:flex; flex-direction:column; gap:10px}
+  .drill{background:var(--surface); border:1px solid var(--line); border-radius:16px; padding:14px 16px; text-align:left; width:100%; display:flex; align-items:center; gap:12px}
+  .drill:active,.tchip:active{transform:scale(.985)}
+  .drill .tag{font-size:10px; font-weight:700; letter-spacing:.1em; padding:2px 8px; border-radius:99px; background:var(--accent-soft); color:var(--accent); flex:none}
+  .drill .body{flex:1}
+  .drill h3{margin:0; font-size:15px}
+  .drill p{margin:0; font-size:12px; color:var(--ink-soft)}
+  .drill .done{font-size:12px; color:var(--ok-ink); flex:none}
   .foot{margin-top:auto; padding:26px 4px 12px; font-size:11.5px; color:var(--ink-soft)}
 
-  /* ---------- drill header ---------- */
+  /* drill header */
   .dhead{display:flex; align-items:center; gap:12px; padding:14px 0 10px; position:sticky; top:0; background:var(--bg); z-index:5}
   .backbtn{width:40px; height:40px; border-radius:12px; background:var(--surface); border:1px solid var(--line); font-size:18px; flex:none; display:grid; place-items:center}
   .pbar{flex:1; height:8px; border-radius:99px; background:var(--surface2); overflow:hidden}
-  .pbar > div{height:100%; background:var(--accent); border-radius:99px; transition:width .3s}
+  .pbar>div{height:100%; background:var(--accent); border-radius:99px; transition:width .3s}
   .pcount{font-size:12px; color:var(--ink-soft); flex:none}
 
-  /* ---------- problem card ---------- */
-  .qcard{background:var(--surface); border:1px solid var(--line); border-radius:16px; padding:16px 18px; box-shadow:var(--shadow)}
-  .qcard .cat{font-size:11px; font-weight:700; letter-spacing:.12em; color:var(--accent)}
+  /* problem card */
+  .qcard{background:var(--surface); border:1px solid var(--line); border-radius:16px; padding:14px 18px; box-shadow:var(--shadow)}
+  .qcard .meta{display:flex; align-items:center; gap:8px; font-size:11px; font-weight:700; letter-spacing:.1em; color:var(--accent)}
+  .qcard .meta .lv{color:var(--ink-soft); letter-spacing:0; font-weight:500}
+  .qcard .meta .rev{margin-left:auto; color:var(--warn); letter-spacing:.04em}
   .qcard .qt{margin:6px 0 0; font-size:15px}
 
-  /* ---------- journal entry area ---------- */
+  /* journal entry */
   .je{display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:14px}
   .side h3{margin:0 0 6px; font-size:12px; letter-spacing:.14em; font-weight:700}
   .side.d h3{color:var(--debit)} .side.c h3{color:var(--credit)}
@@ -108,11 +113,11 @@
   .jline .a{font-size:13px; font-weight:500; display:block}
   .jline .m{font-size:15px; display:block; text-align:right}
   .jline .del{font-size:10px; color:var(--ink-soft)}
-  .addline{border:1.5px dashed var(--line); border-radius:12px; padding:10px; width:100%; color:var(--ink-soft); font-size:13px; min-height:44px}
+  .addline{border:1.5px dashed var(--line); border-radius:12px; padding:10px; width:100%; color:var(--ink-soft); font-size:13px; min-height:44px; margin-top:6px}
   .baltag{grid-column:1/-1; text-align:center; font-size:12px; color:var(--ink-soft)}
   .baltag.ok{color:var(--ok-ink); font-weight:700}
 
-  /* ---------- feedback ---------- */
+  /* feedback */
   .fb{margin-top:14px; border-radius:16px; padding:14px 16px; display:none}
   .fb.on{display:block}
   .fb.good{background:var(--ok-bg); border:1px solid var(--ok-line); color:var(--ok-ink)}
@@ -121,15 +126,37 @@
   .fb .ans{background:var(--surface); color:var(--ink); border-radius:10px; padding:8px 12px; margin:8px 0; font-size:13px}
   .fb .ansrow{display:flex; justify-content:space-between; gap:8px}
   .fb .expl{font-size:13px; color:var(--ink); opacity:.9; margin:6px 0 0}
+  .fb .next{font-size:11px; color:var(--ink-soft); margin-top:6px}
+  .fb .report{font-size:11px; color:var(--ink-soft); text-decoration:underline; margin-top:8px; min-height:32px}
+  .today .go.resume{background:var(--accent-soft); color:var(--accent); margin-top:8px}
+  .blank.active{cursor:pointer}
+  .closex{position:absolute; right:14px; top:10px; width:36px; height:36px; border-radius:10px; background:var(--surface2); font-size:16px; display:grid; place-items:center}
+  .sheet{outline:none}
+  .sheet .inner{position:relative}
+  #toast{position:fixed; left:50%; bottom:calc(84px + env(safe-area-inset-bottom)); transform:translateX(-50%) translateY(20px); background:var(--ink); color:var(--bg); padding:10px 16px; border-radius:12px; font-size:13px; opacity:0; pointer-events:none; transition:.25s; z-index:40; max-width:90vw; text-align:center}
+  #toast.on{opacity:1; transform:translateX(-50%) translateY(0)}
 
-  /* ---------- bottom action bar ---------- */
-  .actionbar{position:fixed; left:0; right:0; bottom:0; z-index:20; padding:10px 16px calc(12px + env(safe-area-inset-bottom)); background:linear-gradient(to top, var(--bg) 70%, transparent); pointer-events:none}
+  /* result */
+  .donecard{background:var(--surface); border:1px solid var(--line); border-radius:20px; padding:24px 22px; text-align:center; margin-top:16px; box-shadow:var(--shadow)}
+  .donecard .big{font-size:44px; font-weight:700}
+  .donecard p{color:var(--ink-soft); font-size:13px; margin:4px 0 0}
+  .tbl{width:100%; border-collapse:collapse; font-size:13px; margin-top:8px}
+  .tbl td{padding:7px 4px; border-bottom:1px solid var(--line)}
+  .tbl td:last-child{text-align:right}
+  .wrongs{display:flex; flex-direction:column; gap:6px; margin-top:8px}
+  .wrongs .w{background:var(--surface); border:1px solid var(--line); border-radius:10px; padding:8px 12px; font-size:12.5px; text-align:left; width:100%}
+  .wrongs .w b{color:var(--ng-ink); font-weight:700; margin-right:6px}
+  .btn2{width:100%; height:46px; border-radius:12px; background:var(--surface); border:1px solid var(--line); font-weight:700; margin-top:10px}
+  .btn2.share{background:var(--accent-soft); color:var(--accent); border-color:transparent}
+
+  /* action bar */
+  .actionbar{position:fixed; left:0; right:0; bottom:0; z-index:20; padding:10px 16px calc(12px + env(safe-area-inset-bottom)); background:linear-gradient(to top,var(--bg) 70%,transparent); pointer-events:none}
   .actionbar .inner{max-width:480px; margin:0 auto; display:flex; gap:10px; pointer-events:auto}
   .fab{width:52px; height:52px; border-radius:16px; background:var(--surface); border:1px solid var(--line); font-size:20px; flex:none; box-shadow:var(--shadow); display:grid; place-items:center}
   .cta{flex:1; height:52px; border-radius:16px; background:var(--accent); color:var(--accent-ink); font-weight:700; font-size:16px; letter-spacing:.06em; box-shadow:var(--shadow)}
   .cta:disabled{opacity:.35}
 
-  /* ---------- bottom sheets ---------- */
+  /* sheets */
   .scrim{position:fixed; inset:0; background:rgba(10,15,12,.45); opacity:0; pointer-events:none; transition:opacity .2s; z-index:30}
   .scrim.on{opacity:1; pointer-events:auto}
   .sheet{position:fixed; left:0; right:0; bottom:0; z-index:31; background:var(--surface); border-radius:20px 20px 0 0; box-shadow:0 -8px 40px rgba(0,0,0,.25); transform:translateY(105%); transition:transform .22s ease-out; padding:14px 16px calc(16px + env(safe-area-inset-bottom)); max-height:85dvh; overflow-y:auto}
@@ -138,12 +165,16 @@
   .sheet h3{margin:0 0 10px; font-size:14px}
   .grabber{width:36px; height:4px; border-radius:99px; background:var(--line); margin:0 auto 10px}
   @media (prefers-reduced-motion: reduce){ .sheet{transition:none} .scrim{transition:none} }
-
   .chips{display:flex; flex-wrap:wrap; gap:8px}
   .chip{background:var(--surface2); border:1px solid var(--line); border-radius:99px; padding:9px 14px; font-size:14px; min-height:44px}
-  .chip:active{background:var(--accent-soft); border-color:var(--accent)}
+  .chip:active,.chip.sel{background:var(--accent-soft); border-color:var(--accent)}
+  .setrow{display:flex; align-items:center; justify-content:space-between; gap:10px; padding:10px 0; border-bottom:1px solid var(--line); font-size:14px}
+  .seg{display:flex; background:var(--surface2); border-radius:10px; padding:3px; gap:2px}
+  .seg button{padding:6px 10px; border-radius:8px; font-size:13px; min-height:36px}
+  .seg button.sel{background:var(--surface); box-shadow:0 1px 4px rgba(0,0,0,.12); font-weight:700; color:var(--accent)}
+  .danger{color:var(--ng-ink); font-size:13px; padding:12px 0}
 
-  /* ---------- numpad ---------- */
+  /* numpad */
   .npdisp{background:var(--surface2); border:1px solid var(--line); border-radius:12px; padding:8px 14px; text-align:right; margin-bottom:10px}
   .npdisp .ctx{font-size:11px; color:var(--ink-soft); text-align:left}
   .npdisp .val{font-size:26px; font-weight:600; min-height:34px}
@@ -154,14 +185,17 @@
   .npk.okk{background:var(--accent); color:var(--accent-ink); font-weight:700; grid-row:span 2; height:auto}
   .npdelbtn{width:100%; margin-top:10px; height:44px; border-radius:12px; color:var(--ng-ink); background:var(--ng-bg); border:1px solid var(--ng-line); font-weight:700; font-size:14px; display:none}
   .npdelbtn.on{display:block}
+  .memo{width:100%; min-height:72px; background:var(--surface2); border:1px solid var(--line); border-radius:12px; color:var(--ink); font-family:inherit; font-size:14px; padding:10px 12px; resize:vertical; margin-bottom:10px}
 
-  /* ---------- box diagram ---------- */
-  .box{background:var(--surface); border:1px solid var(--line); border-radius:16px; margin-top:14px; overflow:hidden}
+  /* guided drill */
+  .box{background:var(--surface); border:1px solid var(--line); border-radius:16px; margin-top:12px; overflow:hidden}
   .box .bt{padding:8px 14px; font-size:12px; font-weight:700; letter-spacing:.1em; background:var(--surface2); border-bottom:1px solid var(--line)}
   .bgrid{display:grid; grid-template-columns:1fr 1fr}
-  .bcell{padding:10px 12px; border-bottom:1px solid var(--line); min-height:64px}
-  .bcell:nth-child(odd){border-right:1px dashed var(--line)}
-  .bgrid .bcell:nth-last-child(-n+2){border-bottom:none}
+  .bgrid.one{grid-template-columns:1fr}
+  .bcell{padding:10px 12px; border-bottom:1px solid var(--line); min-height:60px}
+  .bgrid:not(.one) .bcell:nth-child(odd){border-right:1px dashed var(--line)}
+  .bgrid:not(.one) .bcell:nth-last-child(-n+2){border-bottom:none}
+  .bgrid.one .bcell:last-child{border-bottom:none}
   .bcell .lbl{font-size:11px; color:var(--ink-soft)}
   .bcell .qty{font-size:12px; color:var(--ink-soft)}
   .bcell .amt{font-size:15px; font-weight:600}
@@ -176,49 +210,46 @@
   .shake{animation:shk .3s}
   @keyframes shk{0%,100%{transform:translateX(0)}25%{transform:translateX(-5px)}75%{transform:translateX(5px)}}
   @media (prefers-reduced-motion: reduce){ .shake{animation:none} }
-
-  /* ---------- calc & memo drawer ---------- */
-  .memo{width:100%; min-height:72px; background:var(--surface2); border:1px solid var(--line); border-radius:12px; color:var(--ink); font-family:inherit; font-size:14px; padding:10px 12px; resize:vertical; margin-bottom:10px}
-
-  /* ---------- done screen ---------- */
-  .donecard{background:var(--surface); border:1px solid var(--line); border-radius:20px; padding:28px 22px; text-align:center; margin-top:40px; box-shadow:var(--shadow)}
-  .donecard .big{font-size:44px; font-weight:700}
-  .donecard p{color:var(--ink-soft); font-size:13px}
 </style>
 
+
+</head>
+<body>
 <div id="app">
 
-  <!-- ============ HOME ============ -->
   <section class="screen on" id="scr-home">
     <div class="brand">
-      <div class="eyebrow">PROTOTYPE — 電車モード</div>
-      <h1>ボキトレ<span style="font-size:14px; color:var(--ink-soft); font-weight:500">（仮称）</span></h1>
-      <p>鉛筆も紙も出さずに、片手で簿記2級。</p>
+      <div>
+        <div class="eyebrow">簿記2級 · 電車モード</div>
+        <h1>ボキトレ<small>（仮称）</small></h1>
+      </div>
+      <button class="iconbtn" id="btn-settings" aria-label="設定">⚙</button>
     </div>
-    <div class="statrow">
-      <div class="stat"><div class="v num" id="st-done">0</div><div class="k">答えた回数</div></div>
-      <div class="stat"><div class="v num" id="st-rate">–</div><div class="k">正答率</div></div>
-      <div class="stat"><div class="v num" id="st-streak">0</div><div class="k">連続正解</div></div>
+
+    <div class="today">
+      <div class="t">きょう</div>
+      <div class="row">
+        <div><div class="v num" id="h-due">0</div><div class="k">復習待ち</div></div>
+        <div><div class="v num" id="h-today">0</div><div class="k">きょう答えた</div></div>
+        <div><div class="v num" id="h-days">0</div><div class="k">連続日数</div></div>
+      </div>
+      <button class="go" id="btn-today">きょうの学習を始める</button>
+      <button class="go resume" id="btn-resume" hidden>前回の続きから</button>
     </div>
-    <div class="drills">
-      <button class="drill" id="btn-shiwake">
-        <span class="tag">商業 ＋ 工業</span>
-        <h2>仕訳ドリル</h2>
-        <p>10問 · 科目タップ＋テンキーで入力。間違えた問題は後ろに回ってもう一度出ます。</p>
-      </button>
-      <button class="drill" id="btn-box">
-        <span class="tag">工業簿記</span>
-        <h2>ボックス図で解く 総合原価計算</h2>
-        <p>下書き用紙の代わりに、画面のボックス図を順番に埋めて完成品原価まで出します。</p>
-      </button>
+
+    <div class="sec">
+      <h2>論点マップ <span id="h-mapnote"></span></h2>
+      <div class="tmap" id="h-tmap"></div>
     </div>
-    <div class="foot">
-      プロトタイプ範囲：仕訳10問（商業5・工業5）＋総合原価計算1問。<br>
-      右下の 🖩 でいつでも電卓とメモを開けます。問題はすべてオリジナルです。
+
+    <div class="sec">
+      <h2>計算ドリル <span>ボックス図・分析図を画面で埋める</span></h2>
+      <div class="drills" id="h-drills"></div>
     </div>
+
+    <div class="foot" id="h-foot"></div>
   </section>
 
-  <!-- ============ 仕訳ドリル ============ -->
   <section class="screen" id="scr-quiz">
     <div class="dhead">
       <button class="backbtn" data-home aria-label="ホームへ戻る">←</button>
@@ -226,116 +257,64 @@
       <div class="pcount num" id="q-count"></div>
     </div>
     <div class="qcard">
-      <div class="cat" id="q-cat"></div>
+      <div class="meta"><span id="q-cat"></span><span class="lv" id="q-lv"></span><span class="rev" id="q-rev"></span></div>
       <p class="qt" id="q-text"></p>
     </div>
     <div class="je">
-      <div class="side d">
-        <h3>借方</h3>
-        <div class="lines" id="q-dlines"></div>
-        <button class="addline" data-side="debit" style="margin-top:6px">＋ 科目を選ぶ</button>
-      </div>
-      <div class="side c">
-        <h3>貸方</h3>
-        <div class="lines" id="q-clines"></div>
-        <button class="addline" data-side="credit" style="margin-top:6px">＋ 科目を選ぶ</button>
-      </div>
+      <div class="side d"><h3>借方</h3><div class="lines" id="q-dlines"></div><button class="addline" data-side="debit">＋ 科目を選ぶ</button></div>
+      <div class="side c"><h3>貸方</h3><div class="lines" id="q-clines"></div><button class="addline" data-side="credit">＋ 科目を選ぶ</button></div>
       <div class="baltag" id="q-bal">借方 0 ／ 貸方 0</div>
     </div>
     <div class="fb" id="q-fb">
       <h3 id="q-fb-title"></h3>
       <div id="q-fb-ans"></div>
       <p class="expl" id="q-fb-expl"></p>
+      <p class="next" id="q-fb-next"></p>
+      <button class="report" id="q-report">この問題を報告（IDをコピー）</button>
     </div>
   </section>
 
-  <!-- ============ 仕訳ドリル 完了 ============ -->
-  <section class="screen" id="scr-done">
-    <div class="dhead">
-      <button class="backbtn" data-home aria-label="ホームへ戻る">←</button>
-    </div>
+  <section class="screen" id="scr-result">
+    <div class="dhead"><button class="backbtn" data-home aria-label="ホームへ戻る">←</button></div>
     <div class="donecard">
-      <div class="disp" style="font-size:15px; color:var(--accent); font-weight:700; letter-spacing:.12em">おつかれさま</div>
-      <div class="big num" id="d-score"></div>
-      <p id="d-note"></p>
+      <div class="disp" style="font-size:14px; color:var(--accent); font-weight:700; letter-spacing:.12em">おつかれさま</div>
+      <div class="big num" id="r-score"></div>
+      <p id="r-note"></p>
     </div>
+    <button class="btn2 share" id="r-share">きょうの結果をシェア</button>
+    <div class="sec"><h2>論点別</h2><table class="tbl" id="r-topics"></table></div>
+    <div class="sec" id="r-wrongsec"><h2>間違えた問題</h2><div class="wrongs" id="r-wrongs"></div><button class="btn2" id="r-retry">間違えた問題だけもう一度</button></div>
   </section>
 
-  <!-- ============ ボックス図ドリル ============ -->
-  <section class="screen" id="scr-box">
+  <section class="screen" id="scr-drill">
     <div class="dhead">
       <button class="backbtn" data-home aria-label="ホームへ戻る">←</button>
       <div class="pbar"><div id="b-prog" style="width:0%"></div></div>
       <div class="pcount num" id="b-count"></div>
     </div>
-    <div class="qcard">
-      <div class="cat">工業簿記 · 単純総合原価計算（平均法）</div>
-      <p class="qt" style="font-size:14px">
-        当社は単一製品を大量生産している。次の資料にもとづき、<b>平均法</b>によって月末仕掛品原価と完成品総合原価を求めなさい。原料はすべて<b>工程の始点</b>で投入している。<br><br>
-        月初仕掛品：200個（加工進捗度 50%）　原料費 ¥84,000　加工費 ¥90,000<br>
-        当月投入：1,800個　原料費 ¥756,000　加工費 ¥990,000<br>
-        当月完成品：1,600個　月末仕掛品：400個（加工進捗度 50%）
-      </p>
-    </div>
-
-    <div class="box">
-      <div class="bt">原料費のボックス（数量：個）</div>
-      <div class="bgrid">
-        <div class="bcell"><div class="lbl">月初仕掛品</div><div class="qty num">200個</div><div class="amt num">¥84,000</div></div>
-        <div class="bcell"><div class="lbl">完成品</div><div class="qty num">1,600個</div><div class="amt num"><span class="blank" data-blank="matDone">？</span></div></div>
-        <div class="bcell"><div class="lbl">当月投入</div><div class="qty num">1,800個</div><div class="amt num">¥756,000</div></div>
-        <div class="bcell"><div class="lbl">月末仕掛品</div><div class="qty num">400個</div><div class="amt num"><span class="blank" data-blank="matEnd">？</span></div></div>
-      </div>
-    </div>
-    <div class="box">
-      <div class="bt">加工費のボックス（数量：完成品換算量）</div>
-      <div class="bgrid">
-        <div class="bcell"><div class="lbl">月初仕掛品</div><div class="qty num">200個×50%＝100個</div><div class="amt num">¥90,000</div></div>
-        <div class="bcell"><div class="lbl">完成品</div><div class="qty num">1,600個</div><div class="amt num"><span class="blank" data-blank="convDone">？</span></div></div>
-        <div class="bcell"><div class="lbl">当月投入</div><div class="qty num">（差引）</div><div class="amt num">¥990,000</div></div>
-        <div class="bcell"><div class="lbl">月末仕掛品</div><div class="qty num"><span class="blank" data-blank="convQty">？</span> 個</div><div class="amt num"><span class="blank" data-blank="convEnd">？</span></div></div>
-      </div>
-    </div>
-
-    <div class="stepcard" id="b-step">
-      <div class="sn" id="b-step-n"></div>
-      <p id="b-step-q"></p>
-      <div class="hint" id="b-hint"></div>
-    </div>
-    <div class="fb" id="b-fb">
-      <h3 id="b-fb-title"></h3>
-      <div id="b-fb-body"></div>
-    </div>
+    <div class="qcard"><div class="meta" id="b-cat"></div><p class="qt" style="font-size:14px" id="b-text"></p></div>
+    <div id="b-boxes"></div>
+    <div class="stepcard" id="b-step"><div class="sn" id="b-step-n"></div><p id="b-step-q"></p><div class="hint" id="b-hint"></div></div>
+    <div class="fb" id="b-fb"><h3 id="b-fb-title"></h3><div id="b-fb-body"></div></div>
   </section>
 
 </div>
 
-<!-- ============ bottom action bar ============ -->
-<div class="actionbar">
-  <div class="inner">
-    <button class="fab" id="fab-calc" aria-label="電卓とメモを開く">🖩</button>
-    <button class="cta" id="cta" disabled>判定する</button>
-  </div>
-</div>
+<div class="actionbar"><div class="inner">
+  <button class="fab" id="fab-calc" aria-label="電卓とメモを開く">🖩</button>
+  <button class="cta" id="cta" disabled>判定する</button>
+</div></div>
 
-<!-- ============ sheets ============ -->
 <div class="scrim" id="scrim"></div>
+<div id="toast" role="status" aria-live="polite"></div>
 
-<div class="sheet" id="sheet-acct" role="dialog" aria-label="勘定科目を選ぶ">
-  <div class="inner">
-    <div class="grabber"></div>
-    <h3 id="acct-title">科目を選ぶ</h3>
-    <div class="chips" id="acct-chips"></div>
-  </div>
+<div class="sheet" id="sheet-acct" role="dialog" aria-label="選択">
+  <div class="inner"><div class="grabber"></div><button class="closex" aria-label="閉じる">✕</button><h3 id="acct-title">科目を選ぶ</h3><div class="chips" id="acct-chips"></div></div>
 </div>
 
 <div class="sheet" id="sheet-num" role="dialog" aria-label="金額を入力">
-  <div class="inner">
-    <div class="grabber"></div>
-    <div class="npdisp">
-      <div class="ctx" id="np-ctx"></div>
-      <div class="val num" id="np-val">0</div>
-    </div>
+  <div class="inner"><div class="grabber"></div><button class="closex" aria-label="閉じる">✕</button>
+    <div class="npdisp"><div class="ctx" id="np-ctx"></div><div class="val num" id="np-val">0</div></div>
     <div class="npgrid">
       <button class="npk num">7</button><button class="npk num">8</button><button class="npk num">9</button><button class="npk op" data-op="÷">÷</button>
       <button class="npk num">4</button><button class="npk num">5</button><button class="npk num">6</button><button class="npk op" data-op="×">×</button>
@@ -348,9 +327,7 @@
 </div>
 
 <div class="sheet" id="sheet-calc" role="dialog" aria-label="電卓とメモ">
-  <div class="inner">
-    <div class="grabber"></div>
-    <h3>メモ & 電卓</h3>
+  <div class="inner"><div class="grabber"></div><button class="closex" aria-label="閉じる">✕</button><h3>メモ & 電卓</h3>
     <textarea class="memo" id="memo" placeholder="下書きメモ（この端末にだけ保存されます）"></textarea>
     <div class="npdisp"><div class="val num" id="cp-val">0</div></div>
     <div class="npgrid">
@@ -363,160 +340,239 @@
   </div>
 </div>
 
+<div class="sheet" id="sheet-set" role="dialog" aria-label="設定">
+  <div class="inner"><div class="grabber"></div><button class="closex" aria-label="閉じる">✕</button><h3>設定</h3>
+    <div class="setrow"><span>出題する分野</span><div class="seg" data-set="cat"><button data-v="both">両方</button><button data-v="商業">商業</button><button data-v="工業">工業</button></div></div>
+    <div class="setrow"><span>1回の問題数</span><div class="seg" data-set="n"><button data-v="3">一駅3</button><button data-v="5">5</button><button data-v="10">10</button><button data-v="20">20</button></div></div>
+    <div class="setrow"><span>テーマ</span><div class="seg" data-set="theme"><button data-v="system">自動</button><button data-v="light">ライト</button><button data-v="dark">ダーク</button></div></div>
+    <button class="danger" id="btn-reset">学習データをリセット（2回タップ）</button>
+  </div>
+</div>
+
 <script>
 "use strict";
 /* ================= data ================= */
-const PROBLEMS = [
-  {cat:"商業", text:"商品 ¥300,000 をクレジット払いの条件で販売した。信販会社へのクレジット手数料（販売代金の2%）は販売時に計上する。",
-   cands:["クレジット売掛金","売掛金","支払手数料","売上","受取手数料","現金"],
-   debit:[["クレジット売掛金",294000],["支払手数料",6000]], credit:[["売上",300000]],
-   expl:"手数料 300,000×2%＝6,000 を差し引いた残額がクレジット売掛金。売上は総額の300,000で計上します。"},
-  {cat:"商業", text:"決算につき、備品（取得原価 ¥500,000、期首減価償却累計額 ¥200,000）について 200%定率法（耐用年数5年）により減価償却を行う。記帳は間接法による。",
-   cands:["減価償却費","備品減価償却累計額","備品","固定資産除却損","貯蔵品","未払金"],
-   debit:[["減価償却費",120000]], credit:[["備品減価償却累計額",120000]],
-   expl:"償却率＝1/5×200%＝0.4。期首帳簿価額（500,000−200,000）＝300,000 に 0.4 を掛けて 120,000。"},
-  {cat:"商業", text:"売買目的で上場株式100株を1株 ¥1,200 で購入し、購入手数料 ¥3,000 とともに代金は後日証券会社へ支払うこととした。",
-   cands:["売買目的有価証券","満期保有目的債券","未払金","買掛金","支払手数料","現金"],
-   debit:[["売買目的有価証券",123000]], credit:[["未払金",123000]],
-   expl:"1,200×100＋3,000＝123,000。付随費用（購入手数料）は取得原価に含めます。商品以外の未払いは買掛金でなく未払金。"},
-  {cat:"商業", text:"従業員に賞与 ¥1,200,000 を支給し、源泉所得税 ¥100,000 を差し引いた残額を当座預金口座から振り込んだ。なお、前期決算において賞与引当金 ¥800,000 を設定している。",
-   cands:["賞与引当金","賞与","所得税預り金","当座預金","現金","法定福利費"],
-   debit:[["賞与引当金",800000],["賞与",400000]], credit:[["所得税預り金",100000],["当座預金",1100000]],
-   expl:"引当金 800,000 を取り崩し、超える 400,000 だけ当期の費用（賞与）。振込額は 1,200,000−100,000＝1,100,000。"},
-  {cat:"商業", text:"×1年4月1日、備品についてリース契約（ファイナンス・リース取引に該当、リース料年額 ¥60,000・リース期間5年）を締結し、リース取引を開始した。利子込み法により処理する。",
-   cands:["リース資産","リース債務","支払リース料","備品","支払利息","未払金"],
-   debit:[["リース資産",300000]], credit:[["リース債務",300000]],
-   expl:"利子込み法ではリース料総額 60,000×5年＝300,000 をそのまま資産・債務に計上します。支払利息は使いません。"},
-  {cat:"工業", text:"材料500kgを1kgあたり ¥1,000 で掛けで購入し、引取運賃 ¥20,000 は現金で支払った。",
-   cands:["材料","買掛金","現金","仕掛品","材料副費","製造間接費"],
-   debit:[["材料",520000]], credit:[["買掛金",500000],["現金",20000]],
-   expl:"引取運賃などの材料副費は材料の購入原価に含めます。500×1,000＋20,000＝520,000。"},
-  {cat:"工業", text:"直接工の作業時間報告書によれば、当月の直接作業時間は400時間、間接作業時間は100時間であった。予定賃率は1時間あたり ¥1,000 である。賃金の消費額を計上する。",
-   cands:["仕掛品","製造間接費","賃金","製品","労務費差異","現金"],
-   debit:[["仕掛品",400000],["製造間接費",100000]], credit:[["賃金",500000]],
-   expl:"直接作業分は仕掛品へ、間接作業分は製造間接費へ。直接工でも間接作業の時間は間接労務費です。"},
-  {cat:"工業", text:"製造間接費を直接作業時間を配賦基準として予定配賦する。予定配賦率は1時間あたり ¥800、当月の実際直接作業時間は450時間であった。",
-   cands:["仕掛品","製造間接費","製品","製造間接費配賦差異","賃金","材料"],
-   debit:[["仕掛品",360000]], credit:[["製造間接費",360000]],
-   expl:"予定配賦額＝800×450時間＝360,000。テンキーの×キーでそのまま計算できます。"},
-  {cat:"工業", text:"当月の製造間接費の実際発生額は ¥375,000 であった。予定配賦額 ¥360,000 との差額を製造間接費配賦差異勘定へ振り替える。",
-   cands:["製造間接費配賦差異","製造間接費","仕掛品","売上原価","原価差異","製品"],
-   debit:[["製造間接費配賦差異",15000]], credit:[["製造間接費",15000]],
-   expl:"実際 375,000 ＞ 予定 360,000 なので 15,000 の不利差異（借方差異）。製造間接費勘定から差異勘定へ振り替えます。"},
-  {cat:"工業", text:"当月に完成した製品の原価は ¥1,250,000 であった。完成品原価を振り替える。",
-   cands:["製品","仕掛品","売上原価","製造間接費","売上","材料"],
-   debit:[["製品",1250000]], credit:[["仕掛品",1250000]],
-   expl:"完成した分だけ仕掛品勘定から製品勘定へ。販売したときにはじめて売上原価に振り替えます。"},
-];
-
-const BOX_STEPS = [
-  {key:"convQty", n:"STEP 1", q:"月末仕掛品の完成品換算量は？（400個 × 加工進捗度50%）", a:200, unit:"個",
-   hint:"加工費は進捗度に応じて発生するので、400個×50%＝200個ぶんとして扱います。"},
-  {key:"matEnd", n:"STEP 2", q:"原料費の月末仕掛品原価は？　平均法なので（月初84,000＋当月756,000）÷（完成1,600個＋月末400個）で単価を出し、月末400個分を計算。", a:168000, unit:"円",
-   hint:"840,000÷2,000個＝@420。420×400個＝168,000。テンキーで 84000＋756000÷2000×400 と左から順に押せばOK。"},
-  {key:"matDone", n:"STEP 3", q:"原料費の完成品分は？（ボックスの貸借差引で出すのが速い）", a:672000, unit:"円",
-   hint:"84,000＋756,000−168,000＝672,000。ボックス図は「合計−月末＝完成品」の形で使います。"},
-  {key:"convEnd", n:"STEP 4", q:"加工費の月末仕掛品原価は？（月初90,000＋当月990,000）÷（完成1,600個＋月末換算200個）×200個", a:120000, unit:"円",
-   hint:"1,080,000÷1,800個＝@600。600×200個＝120,000。"},
-  {key:"convDone", n:"STEP 5", q:"加工費の完成品分は？", a:960000, unit:"円",
-   hint:"90,000＋990,000−120,000＝960,000。"},
-  {key:"final", n:"FINAL", q:"完成品総合原価は？（原料費の完成品分＋加工費の完成品分）", a:1632000, unit:"円",
-   hint:"672,000＋960,000＝1,632,000。月末仕掛品原価は 168,000＋120,000＝288,000 です。"},
-];
+const PROBLEMS = [{"id":"S01","cat":"商業","topic":"債権債務","level":1,"text":"商品 ¥300,000 をクレジット払いの条件で販売した。信販会社へのクレジット手数料（販売代金の2%）は販売時に計上する。","cands":["クレジット売掛金","売掛金","支払手数料","売上","受取手数料","現金"],"debit":[["クレジット売掛金",294000],["支払手数料",6000]],"credit":[["売上",300000]],"expl":"手数料 300,000×2%＝6,000 を差し引いた残額がクレジット売掛金。売上は総額の300,000で計上します。","syl":"2026"},{"id":"S02","cat":"商業","topic":"固定資産","level":2,"text":"決算につき、備品（取得原価 ¥500,000、期首減価償却累計額 ¥200,000）について 200%定率法（耐用年数5年）により減価償却を行う。記帳は間接法による。","cands":["減価償却費","備品減価償却累計額","備品","固定資産除却損","貯蔵品","未払金"],"debit":[["減価償却費",120000]],"credit":[["備品減価償却累計額",120000]],"expl":"償却率＝1/5×200%＝0.4。期首帳簿価額（500,000−200,000）＝300,000 に 0.4 を掛けて 120,000。","syl":"2026"},{"id":"S03","cat":"商業","topic":"有価証券","level":1,"text":"売買目的で上場株式100株を1株 ¥1,200 で購入し、購入手数料 ¥3,000 とともに代金は後日証券会社へ支払うこととした。","cands":["売買目的有価証券","満期保有目的債券","未払金","買掛金","支払手数料","現金"],"debit":[["売買目的有価証券",123000]],"credit":[["未払金",123000]],"expl":"1,200×100＋3,000＝123,000。付随費用（購入手数料）は取得原価に含めます。商品以外の未払いは買掛金でなく未払金。","syl":"2026"},{"id":"S04","cat":"商業","topic":"引当金","level":2,"text":"従業員に賞与 ¥1,200,000 を支給し、源泉所得税 ¥100,000 を差し引いた残額を当座預金口座から振り込んだ。なお、前期決算において賞与引当金 ¥800,000 を設定している。","cands":["賞与引当金","賞与","所得税預り金","当座預金","現金","法定福利費"],"debit":[["賞与引当金",800000],["賞与",400000]],"credit":[["所得税預り金",100000],["当座預金",1100000]],"expl":"引当金 800,000 を取り崩し、超える 400,000 だけ当期の費用（賞与）。振込額は 1,200,000−100,000＝1,100,000。","syl":"2026"},{"id":"S05","cat":"商業","topic":"リース","level":2,"text":"×1年4月1日、備品についてリース契約（ファイナンス・リース取引に該当、リース料年額 ¥60,000・リース期間5年）を締結し、リース取引を開始した。利子込み法により処理する。","cands":["リース資産","リース債務","支払リース料","備品","支払利息","未払金"],"debit":[["リース資産",300000]],"credit":[["リース債務",300000]],"expl":"利子込み法ではリース料総額 60,000×5年＝300,000 をそのまま資産・債務に計上します。支払利息は使いません。","syl":"2026"},{"id":"K06","cat":"工業","topic":"材料費","level":1,"text":"材料500kgを1kgあたり ¥1,000 で掛けで購入し、引取運賃 ¥20,000 は現金で支払った。","cands":["材料","買掛金","現金","仕掛品","材料副費","製造間接費"],"debit":[["材料",520000]],"credit":[["買掛金",500000],["現金",20000]],"expl":"引取運賃などの材料副費は材料の購入原価に含めます。500×1,000＋20,000＝520,000。","syl":"2026"},{"id":"K07","cat":"工業","topic":"労務費","level":1,"text":"直接工の作業時間報告書によれば、当月の直接作業時間は400時間、間接作業時間は100時間であった。予定賃率は1時間あたり ¥1,000 である。賃金の消費額を計上する。","cands":["仕掛品","製造間接費","賃金","製品","賃率差異","現金"],"debit":[["仕掛品",400000],["製造間接費",100000]],"credit":[["賃金",500000]],"expl":"直接作業分は仕掛品へ、間接作業分は製造間接費へ。直接工でも間接作業の時間は間接労務費です。","syl":"2026"},{"id":"K08","cat":"工業","topic":"製造間接費","level":1,"text":"製造間接費を直接作業時間を配賦基準として予定配賦する。予定配賦率は1時間あたり ¥800、当月の実際直接作業時間は450時間であった。","cands":["仕掛品","製造間接費","製品","製造間接費配賦差異","賃金","材料"],"debit":[["仕掛品",360000]],"credit":[["製造間接費",360000]],"expl":"予定配賦額＝800×450時間＝360,000。テンキーの×キーでそのまま計算できます。","syl":"2026"},{"id":"K09","cat":"工業","topic":"製造間接費","level":2,"text":"当月の製造間接費の実際発生額は ¥375,000 であった。予定配賦額 ¥360,000 との差額を製造間接費配賦差異勘定へ振り替える。","cands":["製造間接費配賦差異","製造間接費","仕掛品","売上原価","予算差異","製品"],"debit":[["製造間接費配賦差異",15000]],"credit":[["製造間接費",15000]],"expl":"実際 375,000 ＞ 予定 360,000 なので 15,000 の不利差異（借方差異）。製造間接費勘定から差異勘定へ振り替えます。","syl":"2026"},{"id":"K10","cat":"工業","topic":"総合原価計算","level":1,"text":"当月に完成した製品の原価は ¥1,250,000 であった。完成品原価を振り替える。","cands":["製品","仕掛品","売上原価","製造間接費","売上","材料"],"debit":[["製品",1250000]],"credit":[["仕掛品",1250000]],"expl":"完成した分だけ仕掛品勘定から製品勘定へ。販売したときにはじめて売上原価に振り替えます。","syl":"2026"},{"id":"S11","cat":"商業","topic":"商品売買","level":1,"text":"売上原価対立法を採用している当社は、A商品300個を@¥1,000で掛けで仕入れていた。本日、このうち20個が品違いであったため仕入先へ返品し、代金は買掛金から控除することとした。","cands":["商品","現金","仕入","未払金","売上原価","買掛金","当座預金"],"debit":[["買掛金",20000]],"credit":[["商品",20000]],"expl":"売上原価対立法では仕入時に商品勘定へ計上しているので、返品は商品勘定を直接減らす。@1,000×20個＝20,000。","syl":"2026"},{"id":"S12","cat":"商業","topic":"債権債務","level":1,"text":"商品¥300,000をクレジット払いの条件で販売した。信販会社に対する手数料は販売代金の4％であり、販売時に計上する。","cands":["売上","クレジット売掛金","当座預金","売掛金","支払手数料","受取手数料","未収入金"],"debit":[["クレジット売掛金",288000],["支払手数料",12000]],"credit":[["売上",300000]],"expl":"信販会社への債権は売掛金と区別してクレジット売掛金で処理し、手数料は販売時に費用計上する。手数料300,000×4％=12,000、債権額300,000-12,000=288,000。","syl":"2026"},{"id":"S13","cat":"商業","topic":"債権債務","level":2,"text":"得意先に対する売掛金について発生記録を行っていた電子記録債権¥500,000を、資金化のため取引銀行に¥487,000で譲渡し、代金は当座預金に振り込まれた。","cands":["電子記録債権","当座預金","電子記録債務","手形売却損","支払利息","電子記録債権売却損","売掛金"],"debit":[["当座預金",487000],["電子記録債権売却損",13000]],"credit":[["電子記録債権",500000]],"expl":"電子記録債権の譲渡は債権の消滅として処理し、譲渡価額との差額は電子記録債権売却損とする。差額500,000-487,000=13,000。","syl":"2026"},{"id":"S14","cat":"商業","topic":"債権債務","level":3,"text":"かねて銀行で割り引いていた得意先振出の約束手形¥800,000が満期日に支払拒絶されたため、銀行から償還請求を受け、手形金額と満期日以後の法定利息¥3,000を小切手を振り出して支払った。なお、この金額は得意先に対して償還請求している。","cands":["支払利息","受取手形","支払手形","不渡手形","手形売却損","貸倒損失","当座預金"],"debit":[["不渡手形",803000]],"credit":[["当座預金",803000]],"expl":"割引手形が不渡りとなり買い戻した場合、支払額は得意先への請求権となるため不渡手形で処理する。手形金額800,000＋法定利息3,000＝803,000。","syl":"2026"},{"id":"S15","cat":"商業","topic":"現金預金","level":2,"text":"決算にあたり銀行残高証明書と当座預金勘定の残高を照合したところ、買掛金の支払いのために作成した小切手¥180,000が、取引先に未渡しのまま金庫に保管されていることが判明した。","cands":["当座借越","買掛金","支払手形","未払金","現金","未払費用","当座預金"],"debit":[["当座預金",180000]],"credit":[["買掛金",180000]],"expl":"未渡小切手は当社の当座預金が減っていないため当座預金を戻し入れ、消滅させていた債務を復活させる。相手勘定は費用の未払いではなく買掛金180,000。","syl":"2026"},{"id":"S16","cat":"商業","topic":"有価証券","level":3,"text":"売買目的で保有する額面総額¥2,000,000のA社社債（年利率3.65％、利払日は3月末と9月末の年2回）を、11月30日に額面¥100につき¥98.50で売却し、端数利息とともに代金は当座預金に入金された。この社債は当期中に額面¥100につき¥97.00で取得したものであり、取得後に決算を経ていない。端数利息は1年を365日として日割計算する。","cands":["有価証券売却損","売買目的有価証券","満期保有目的債券","当座預金","有価証券売却益","支払手数料","有価証券利息"],"debit":[["当座預金",1982200]],"credit":[["売買目的有価証券",1940000],["有価証券売却益",30000],["有価証券利息",12200]],"expl":"売却代金と直前利払日の翌日からの端数利息を合わせて受け取る。売価2,000,000×98.50/100=1,970,000、簿価1,940,000で売却益30,000、端数利息2,000,000×3.65％×61日/365=12,200。","syl":"2026"},{"id":"S17","cat":"商業","topic":"有価証券","level":2,"text":"×1年4月1日に他社が発行した社債（額面総額¥5,000,000、償還期間5年、年利率0.4％、利払日3月末）を額面¥100につき¥97.00で取得し、満期保有目的で保有している。×2年3月31日の決算にあたり、額面金額と取得価額の差額は金利の調整と認められるため償却原価法（定額法）により評価する。なお、利息の受取りに関する仕訳は済んでいる。","cands":["その他有価証券","有価証券利息","当座預金","有価証券評価益","満期保有目的債券","売買目的有価証券","有価証券売却益"],"debit":[["満期保有目的債券",30000]],"credit":[["有価証券利息",30000]],"expl":"取得価額と額面の差額を償還までの期間にわたって按分し、帳簿価額に加算するとともに有価証券利息とする。差額5,000,000-4,850,000=150,000、150,000÷5年=30,000。","syl":"2026"},{"id":"S18","cat":"商業","topic":"有価証券","level":2,"text":"決算にあたり、その他有価証券として保有するB社株式（取得原価¥1,800,000、決算日の時価¥1,650,000）を時価に評価替えする。全部純資産直入法によっており、税効果会計は適用しない。","cands":["子会社株式","売買目的有価証券","有価証券評価益","有価証券評価損","その他有価証券評価差額金","繰延税金資産","その他有価証券"],"debit":[["その他有価証券評価差額金",150000]],"credit":[["その他有価証券",150000]],"expl":"その他有価証券の評価差額は損益ではなく純資産に直接計上する。評価差額1,800,000-1,650,000=150,000の評価損相当を借方の評価差額金とする。","syl":"2026"},{"id":"S19","cat":"商業","topic":"連結会計","level":3,"text":"×1年3月31日、当社はS社の発行済株式の80％を¥52,000,000で取得して支配を獲得した。同日のS社の資本は、資本金¥40,000,000、資本剰余金¥10,000,000、利益剰余金¥10,000,000であり、S社の資産・負債の帳簿価額と時価は一致している。支配獲得日の連結修正仕訳（投資と資本の相殺消去）を示しなさい。","cands":["資本剰余金","のれん","のれん償却","その他有価証券","利益剰余金","資本金","子会社株式","非支配株主持分"],"debit":[["資本金",40000000],["資本剰余金",10000000],["利益剰余金",10000000],["のれん",4000000]],"credit":[["子会社株式",52000000],["非支配株主持分",12000000]],"expl":"子会社の資本のうち親会社持分と投資を相殺し、差額をのれん、非持分を非支配株主持分に振り替える。資本合計60,000,000×20％=12,000,000、のれん52,000,000-60,000,000×80％=4,000,000。","syl":"2026"},{"id":"S20","cat":"商業","topic":"固定資産","level":3,"text":"×8年4月1日、営業用車両（取得原価¥3,000,000、減価償却累計額¥1,800,000、間接法により記帳）を下取りに出し、新車両¥3,600,000を購入した。下取価額は¥900,000であり、差額は翌月末払いとした。期首の買換えであるため当期の減価償却は行わない。","cands":["車両運搬具減価償却累計額","車両運搬具","固定資産売却損","当座預金","未収入金","未払金","固定資産売却益","減価償却費"],"debit":[["車両運搬具",3600000],["車両運搬具減価償却累計額",1800000],["固定資産売却損",300000]],"credit":[["車両運搬具",3000000],["未払金",2700000]],"expl":"買換えは旧車両の売却と新車両の購入に分けて考え、下取価額と帳簿価額の差額を売却損益とする。帳簿価額3,000,000-1,800,000=1,200,000、下取900,000との差300,000が売却損、未払額3,600,000-900,000=2,700,000。","syl":"2026"},{"id":"S21","cat":"商業","topic":"固定資産","level":3,"text":"×9年3月31日（決算日）、機械装置（取得原価¥8,000,000、残存価額ゼロ、総利用可能時間20,000時間、生産高比例法により償却、前期末までの減価償却累計額¥6,400,000）を除却した。当期の実際利用時間は1,000時間であり、当期分の減価償却も計上する。なお、除却した機械装置の処分価値は¥150,000と見積られた。","cands":["固定資産除却損","未払金","機械装置減価償却累計額","未収入金","固定資産売却損","機械装置","貯蔵品","減価償却費"],"debit":[["機械装置減価償却累計額",6400000],["減価償却費",400000],["貯蔵品",150000],["固定資産除却損",1050000]],"credit":[["機械装置",8000000]],"expl":"除却時は当期分の償却を計上したうえで、処分価値を貯蔵品に振り替え、残りを除却損とする。当期償却8,000,000×1,000時間/20,000時間=400,000、除却損8,000,000-6,800,000-150,000=1,050,000。","syl":"2026"},{"id":"S22","cat":"商業","topic":"固定資産","level":3,"text":"かねてより建設中であった倉庫が完成し引渡しを受けた。工事代金総額¥30,000,000のうち¥20,000,000はすでに支払って建設仮勘定に計上しており、残額は小切手を振り出して支払った。なお、この倉庫の取得に対して交付された国庫補助金¥6,000,000（受入時に国庫補助金受贈益として処理済み）について、直接減額方式による圧縮記帳を行う。","cands":["国庫補助金受贈益","建物減価償却累計額","建設仮勘定","建物","未払金","修繕費","固定資産圧縮損","当座預金"],"debit":[["建物",24000000],["固定資産圧縮損",6000000]],"credit":[["建設仮勘定",20000000],["当座預金",10000000]],"expl":"完成時に建設仮勘定を本勘定へ振り替え、直接減額方式では取得原価から圧縮額を直接控除する。建物30,000,000-6,000,000=24,000,000、残額30,000,000-20,000,000=10,000,000を当座預金で支払う。建物30,000,000で計上してから圧縮損6,000,000を建物から減額する二段階の仕訳も正解。","alts":[{"debit":[["建物",30000000],["固定資産圧縮損",6000000]],"credit":[["建設仮勘定",20000000],["当座預金",10000000],["建物",6000000]]}],"syl":"2026"},{"id":"S23","cat":"商業","topic":"無形固定資産","level":2,"text":"×5年10月1日に自社利用目的で取得し、ソフトウェア勘定に計上していた¥4,800,000について、×6年3月31日の決算にあたり、利用可能期間5年、定額法、月割計算により償却する。","cands":["ソフトウェア","のれん","のれん償却","研究開発費","減価償却費","ソフトウェア仮勘定","ソフトウェア償却"],"debit":[["ソフトウェア償却",480000]],"credit":[["ソフトウェア",480000]],"expl":"無形固定資産は残存価額ゼロの定額法で直接控除するため、貸方はソフトウェア勘定そのものとなる。4,800,000÷5年×6ヶ月/12ヶ月=480,000。","syl":"2026"},{"id":"S24","cat":"商業","topic":"無形固定資産","level":2,"text":"×1年10月1日にA商店を買収した際に計上したのれん¥12,000,000について、×2年3月31日の決算にあたり、10年間にわたって定額法により月割で償却する。","cands":["支払手数料","減価償却費","子会社株式","ソフトウェア償却","のれん","のれん償却","負ののれん発生益"],"debit":[["のれん償却",600000]],"credit":[["のれん",600000]],"expl":"のれんは取得後20年以内に定額法等で規則的に償却し、直接控除する。12,000,000÷10年×6ヶ月/12ヶ月=600,000。","syl":"2026"},{"id":"S25","cat":"商業","topic":"リース","level":3,"text":"当社は×1年4月1日、リース会社と機械装置のリース契約（所有権移転外ファイナンス・リース取引、リース期間5年、年間リース料¥600,000を毎年3月末に当座預金から支払い、見積現金購入価額¥2,700,000）を締結し、利子抜き法により処理している。×2年3月31日、第1回のリース料を支払った。なお、利息相当額はリース期間にわたり定額法により配分する。","cands":["支払利息","支払リース料","リース資産","リース債務","未払金","減価償却費","当座預金"],"debit":[["リース債務",540000],["支払利息",60000]],"credit":[["当座預金",600000]],"expl":"利子抜き法ではリース料のうち元本返済分をリース債務の減少、利息相当額を支払利息とする。利息総額600,000×5年-2,700,000=300,000、1年分300,000÷5年=60,000、元本600,000-60,000=540,000。","syl":"2026"},{"id":"S26","cat":"商業","topic":"無形固定資産","level":2,"text":"新製品の研究開発のためにのみ使用する測定機器¥1,500,000を購入し、据付費¥80,000とともに小切手を振り出して支払った。あわせて、同じ研究開発プロジェクトに係る外部研究機関への委託費¥420,000も小切手を振り出して支払った。","cands":["現金","備品","ソフトウェア","機械装置","当座預金","研究開発費","支払手数料"],"debit":[["研究開発費",2000000]],"credit":[["当座預金",2000000]],"expl":"研究開発にのみ使用し他に転用できない機器の取得原価は、資産計上せず支出時に全額費用処理する。1,500,000＋80,000＋420,000=2,000,000。","syl":"2026"},{"id":"S27","cat":"商業","topic":"引当金","level":3,"text":"決算にあたり、売掛金の期末残高¥12,000,000について貸倒引当金を差額補充法により設定する。このうちA社に対する¥2,000,000は回収可能性に問題があるため個別に評価し、担保処分見込額¥800,000を控除した残額に50％を、その他の売掛金には2％を設定する。なお、貸倒引当金の決算整理前残高は¥250,000である。","cands":["貸倒引当金戻入","貸倒損失","償却債権取立益","売掛金","貸倒引当金","受取手形","貸倒引当金繰入"],"debit":[["貸倒引当金繰入",550000]],"credit":[["貸倒引当金",550000]],"expl":"個別評価分と一般債権分を別々に見積り、合計から既存残高を控除した額だけ補充する。個別(2,000,000-800,000)×50％=600,000、一般10,000,000×2％=200,000、合計800,000-250,000=550,000。","syl":"2026"},{"id":"S28","cat":"商業","topic":"引当金","level":1,"text":"当社は退職給付引当金について、年間見積額¥5,400,000を毎月末に月割で計上している。×年8月31日、当月分を計上した。","cands":["未払金","賞与引当金","給料","修繕引当金繰入","退職給付費用","退職給付引当金","法定福利費"],"debit":[["退職給付費用",450000]],"credit":[["退職給付引当金",450000]],"expl":"退職給付は将来の支給に備える引当てであり、費用は退職給付費用、相手勘定は負債の退職給付引当金となる。5,400,000÷12ヶ月=450,000。","syl":"2026"},{"id":"S29","cat":"商業","topic":"引当金","level":2,"text":"建物の定期修繕を行い、代金¥1,800,000を小切手を振り出して支払った。なお、この修繕に備えて前期末に修繕引当金¥1,500,000を設定している。","cands":["修繕引当金繰入","減価償却費","未払金","当座預金","修繕費","修繕引当金","建物"],"debit":[["修繕引当金",1500000],["修繕費",300000]],"credit":[["当座預金",1800000]],"expl":"前期に費用処理済みの部分は引当金を取り崩し、超過分だけを当期の修繕費とする。超過額1,800,000-1,500,000=300,000。","syl":"2026"},{"id":"S30","cat":"商業","topic":"引当金","level":2,"text":"前期に販売した商品について品質保証期間内に故障の申し出があり、無償で修理を行い、修理業者への外注費¥180,000を現金で支払った。なお、前期末に設定した商品保証引当金の残高は¥250,000である。","cands":["現金","支払手数料","商品保証引当金戻入","商品保証引当金","当座預金","修繕費","商品保証引当金繰入"],"debit":[["商品保証引当金",180000]],"credit":[["現金",180000]],"expl":"前期の売上に対応する保証費用はすでに引当計上済みのため、当期は費用ではなく引当金を取り崩す。引当金残高250,000の範囲内なので全額180,000を充当する。","syl":"2026"},{"id":"S31","cat":"商業","topic":"外貨建取引","level":2,"text":"×年5月20日に商品10,000ドルを掛けで輸入した。輸入時の為替相場は1ドル¥148であった。×年6月30日、この買掛金の全額を当座預金から支払った。決済時の為替相場は1ドル¥152であった。決済時の仕訳を示しなさい。","cands":["前払金","支払手数料","買掛金","仕入","為替差損益","売掛金","当座預金"],"debit":[["買掛金",1480000],["為替差損益",40000]],"credit":[["当座預金",1520000]],"expl":"買掛金は取引時の相場で記録済みのため、決済額との差額を為替差損益で調整する。計上額10,000ドル×148=1,480,000、支払額10,000ドル×152=1,520,000、差額40,000は円安による差損。","syl":"2026"},{"id":"S32","cat":"商業","topic":"税金","level":2,"text":"決算にあたり、当期の法人税、住民税及び事業税として¥4,200,000を計上した。なお、中間申告時に¥1,800,000を納付し、仮払法人税等として処理している。","cands":["租税公課","繰延税金資産","仮払法人税等","法人税、住民税及び事業税","法人税等調整額","未払消費税","未払法人税等"],"debit":[["法人税、住民税及び事業税",4200000]],"credit":[["仮払法人税等",1800000],["未払法人税等",2400000]],"expl":"年税額を費用計上し、中間納付済みの仮払法人税等を充当した残りを未払法人税等とする。4,200,000-1,800,000=2,400,000。","syl":"2026"},{"id":"S33","cat":"商業","topic":"税金","level":2,"text":"決算にあたり、税抜方式により消費税の納付額を確定する。当期の仮払消費税は¥3,150,000、仮受消費税は¥4,900,000であった。なお、中間納付額¥600,000は仮払金として処理している。","cands":["租税公課","未払消費税","仮払消費税","仮受消費税","未収還付消費税","未払法人税等","仮払金"],"debit":[["仮受消費税",4900000]],"credit":[["仮払消費税",3150000],["仮払金",600000],["未払消費税",1150000]],"expl":"仮受消費税と仮払消費税を相殺し、中間納付額を控除した残額が納付すべき未払消費税となる。4,900,000-3,150,000-600,000=1,150,000。","syl":"2026"},{"id":"S34","cat":"商業","topic":"税効果会計","level":2,"text":"決算において計上した貸倒引当金繰入額¥900,000のうち、¥700,000は税務上損金として認められなかった。法定実効税率30％として税効果会計を適用する。なお、期首に繰延税金資産の残高はない。","cands":["貸倒引当金","繰延税金資産","貸倒引当金繰入","法人税、住民税及び事業税","未払法人税等","法人税等調整額","繰延税金負債"],"debit":[["繰延税金資産",210000]],"credit":[["法人税等調整額",210000]],"expl":"損金不算入額は将来減算一時差異となり、税金の前払いとして繰延税金資産を計上する。700,000×30％=210,000。","syl":"2026"},{"id":"S35","cat":"商業","topic":"純資産","level":2,"text":"増資のため新株2,000株を1株につき¥8,000で発行し、払込金額の全額が当座預金に払い込まれ、払込期日が到来した。なお、会社法が認める最低限度額を資本金とする。","cands":["繰越利益剰余金","資本金","その他資本剰余金","当座預金","資本準備金","株式申込証拠金","利益準備金"],"debit":[["当座預金",16000000]],"credit":[["資本金",8000000],["資本準備金",8000000]],"expl":"会社法上、払込金額の2分の1までは資本金としないことができ、その額は資本準備金とする。払込2,000株×8,000=16,000,000、資本金はその2分の1の8,000,000。","syl":"2026"},{"id":"S36","cat":"商業","topic":"純資産","level":3,"text":"株主総会において、繰越利益剰余金を財源として¥5,000,000の配当を行うことが決議された。決議時の資本金は¥100,000,000、資本準備金は¥18,000,000、利益準備金は¥6,700,000である。会社法に定める額の利益準備金を積み立てる。","cands":["繰越利益剰余金","その他資本剰余金","別途積立金","資本金","資本準備金","未払配当金","利益準備金"],"debit":[["繰越利益剰余金",5300000]],"credit":[["未払配当金",5000000],["利益準備金",300000]],"expl":"積立額は配当額の10分の1と、資本金の4分の1に達するまでの不足額のいずれか小さい方となる。資本金の4分の1は25,000,000で不足額は25,000,000-(18,000,000+6,700,000)=300,000、配当の10分の1の500,000より小さいため300,000。","syl":"2026"},{"id":"S37","cat":"商業","topic":"サービス業","level":3,"text":"当社は資格試験の受験講座を運営している。かねて受講料¥1,200,000を受け取った際に契約負債として処理していた講座について、当期中にすべての役務提供が完了した。なお、この講座のために支出し仕掛品として計上していた費用は¥750,000である。収益の計上と対応する原価の振替えを行った。","cands":["契約負債","役務収益","役務原価","売上原価","前受金","仕掛品","売上"],"debit":[["契約負債",1200000],["役務原価",750000]],"credit":[["役務収益",1200000],["仕掛品",750000]],"expl":"役務の提供が完了した時点で契約負債を役務収益に振り替え、対応する仕掛品を役務原価に振り替えて費用収益を対応させる。収益1,200,000、原価750,000。","syl":"2026"},{"id":"S38","cat":"商業","topic":"本支店会計","level":2,"text":"当社は商品売買を三分法により記帳している。本店は支店に対して商品¥800,000（原価）を発送した。本支店間の商品の振替えは原価で行っている。本店の仕訳を示しなさい。","cands":["支店","現金","当座預金","仕入","売上","本店","買掛金"],"debit":[["支店",800000]],"credit":[["仕入",800000]],"expl":"本支店間の内部取引は損益を計上せず、本店側では支店勘定の増加と仕入の減少として処理する。原価振替のため金額はそのまま800,000。","syl":"2026"},{"id":"S39","cat":"商業","topic":"固定資産","level":3,"text":"×年7月10日、火災により倉庫（取得原価¥15,000,000、減価償却累計額¥9,000,000）が全焼し、焼失時に帳簿価額を未決算勘定に振り替えていた。本日、保険会社から保険金¥7,000,000を支払う旨の通知を受けた。","cands":["火災損失","現金","未収入金","建物","建物減価償却累計額","保険差益","未決算"],"debit":[["未収入金",7000000]],"credit":[["未決算",6000000],["保険差益",1000000]],"expl":"保険金額が確定した時点で未決算を消却し、帳簿価額を超える部分を保険差益とする。未決算15,000,000-9,000,000=6,000,000、差額7,000,000-6,000,000=1,000,000。","syl":"2026"},{"id":"S40","cat":"商業","topic":"決算整理","level":3,"text":"決算にあたり商品の期末棚卸高は、帳簿棚卸数量500個、実地棚卸数量480個、原価@¥2,000、正味売却価額@¥1,850であった。棚卸減耗損と商品評価損を計上する。なお、売上原価は仕入勘定で算定しており期末商品棚卸高の振替えは済んでおり、棚卸減耗損と商品評価損はいずれも売上原価に算入せず独立の科目として処理する。","cands":["繰越商品","売上","棚卸減耗損","商品評価損","商品","売上原価","仕入"],"debit":[["棚卸減耗損",40000],["商品評価損",72000]],"credit":[["繰越商品",112000]],"expl":"数量不足は棚卸減耗損、実地数量に対する単価の下落は商品評価損として、いずれも繰越商品を減額する。減耗(500-480)個×2,000=40,000、評価損480個×(2,000-1,850)=72,000。","syl":"2026"},{"id":"K11","cat":"工業","topic":"材料費","level":3,"text":"当月の材料消費量は直接材料600kg、間接材料200kgであった。当社は払出しを予定消費価格@¥500で仕掛品および製造間接費に計上し、材料勘定の貸方は実際消費価格@¥520で記録して、差額を材料消費価格差異勘定に振り替える方法によっている。当月の材料消費を仕訳する。","cands":["製造間接費","材料消費価格差異","仕掛品","賃金","材料","製品","材料副費差異"],"debit":[["仕掛品",300000],["製造間接費",100000],["材料消費価格差異",16000]],"credit":[["材料",416000]],"expl":"消費額は予定価格で製品原価へ、材料勘定の減少は実際価格で記録するため、差額が差異となる。直接600kg×@500=300,000、間接200kg×@500=100,000、材料の貸方800kg×@520=416,000、差額16,000は実際が高いので借方差異（不利差異）。","syl":"2026"},{"id":"K12","cat":"工業","topic":"材料費","level":2,"text":"月末に材料の実地棚卸を行ったところ、帳簿棚卸数量300kg に対して実地棚卸数量は280kg であった。消費価格は@¥500であり、この減耗はすべて正常な範囲内のものである。棚卸減耗を仕訳する。","cands":["仕掛品","材料","売上原価","製造間接費","材料消費価格差異","製品","賃金"],"debit":[["製造間接費",10000]],"credit":[["材料",10000]],"expl":"正常な棚卸減耗は原価性があるため製造間接費として製品原価に算入する。(300kg-280kg)×@500=10,000。","syl":"2026"},{"id":"K13","cat":"工業","topic":"材料費","level":2,"text":"当社は材料の購入に際し、材料副費を購入代価の5％の予定配賦率で材料の購入原価に算入している。当月の購入代価は¥1,000,000であり、月末に判明した材料副費の実際発生額は¥54,000であった。材料副費の差異を計上する。","cands":["材料副費差異","買掛金","材料副費","製造間接費","材料","売上原価","材料消費価格差異"],"debit":[["材料副費差異",4000]],"credit":[["材料副費",4000]],"expl":"実際発生額54,000が予定配賦額50,000を上回り、材料副費勘定に借方残4,000が生じるので、これを材料副費差異へ振り替える。予定配賦額1,000,000×5%=50,000、54,000-50,000=4,000の借方差異（不利差異）。","syl":"2026"},{"id":"K14","cat":"工業","topic":"労務費","level":1,"text":"当月の賃金支給総額¥2,000,000について、源泉所得税¥150,000および社会保険料の従業員負担分¥260,000を控除した残額を、当座預金口座から支払った。この賃金の支払を仕訳する。","cands":["当座預金","賃金","法定福利費","預り金","未払賃金","製造間接費","現金"],"debit":[["賃金",2000000]],"credit":[["預り金",410000],["当座預金",1590000]],"expl":"控除額は会社が一時的に預かるだけなので預り金で処理する。預り金150,000+260,000=410,000、当座預金2,000,000-410,000=1,590,000。","syl":"2026"},{"id":"K15","cat":"工業","topic":"労務費","level":3,"text":"当月の直接作業時間は1,500時間、間接作業時間は300時間であり、予定賃率@¥1,200で消費額を計上する。なお当月の賃金実際消費額は、当月支払額¥2,000,000に当月末未払額¥350,000を加え、前月末未払額¥145,000を差し引いて算定する。賃金の消費と賃率差異の計上をあわせて仕訳する。","cands":["賃率差異","仕掛品","未払賃金","賃金","作業時間差異","製造間接費","預り金"],"debit":[["仕掛品",1800000],["製造間接費",360000],["賃率差異",45000]],"credit":[["賃金",2205000]],"expl":"直接作業分は仕掛品、間接作業分は製造間接費へ予定賃率で振り替え、実際消費額との差額が賃率差異となる。1,500h×@1,200=1,800,000、300h×@1,200=360,000、実際2,000,000+350,000-145,000=2,205,000、差異2,205,000-2,160,000=45,000の借方差異（不利差異）。","syl":"2026"},{"id":"K16","cat":"工業","topic":"労務費","level":2,"text":"当社は賃金の未払額について、月末に未払賃金勘定へ振り替え、翌月初に再振替仕訳を行う方法を採用している。前月末に計上した未払賃金¥145,000について、当月初の再振替を仕訳する。","cands":["賃金","賃率差異","預り金","未払賃金","仕掛品","当座預金","製造間接費"],"debit":[["未払賃金",145000]],"credit":[["賃金",145000]],"expl":"前月末に賃金勘定から未払賃金勘定へ振り替えた金額を、当月初に元へ戻して当月の支払額と通算できるようにする。金額は前月末計上額145,000をそのまま逆仕訳する。","syl":"2026"},{"id":"K17","cat":"工業","topic":"経費","level":2,"text":"当月に外注先へ引き渡していた部品の加工が完了し、加工品を受け入れた。当月の外注加工賃¥480,000は全額が製造指図書#201に対するものであり、直接経費として処理する。外注加工賃勘定から製品原価への振替を仕訳する。","cands":["材料","外注加工賃","仕掛品","買掛金","製品","製造間接費","当座預金"],"debit":[["仕掛品",480000]],"credit":[["外注加工賃",480000]],"expl":"特定の指図書に直接跡づけられる経費は直接経費として製造間接費を通さず仕掛品へ賦課する。全額が#201向けなので480,000をそのまま仕掛品へ振り替える。","syl":"2026"},{"id":"K18","cat":"工業","topic":"経費","level":2,"text":"月末に当月の間接経費を製造間接費勘定へ集計する。機械装置の減価償却費は年間見積額¥3,600,000の月割額とし、機械装置減価償却累計額勘定へ直接記入する（減価償却費勘定は用いない）。当月の電力料は測定した消費額¥128,000（電力料勘定で処理済み）である。これらの間接経費の製造間接費勘定への振替を仕訳する。","cands":["電力料","製造間接費","建物減価償却累計額","減価償却費","機械装置減価償却累計額","仕掛品","未払金"],"debit":[["製造間接費",428000]],"credit":[["機械装置減価償却累計額",300000],["電力料",128000]],"expl":"月割経費である減価償却費と測定経費である電力料は、いずれも特定の製品に跡づけられないため製造間接費に集計する。3,600,000÷12ヶ月=300,000、300,000+128,000=428,000。","syl":"2026"},{"id":"K19","cat":"工業","topic":"製造間接費","level":3,"text":"当社は公式法変動予算により製造間接費を予定配賦している。月間の基準操業度は直接作業時間1,700時間、変動費率は@¥250、月間固定費予算は¥595,000である。当月の実際直接作業時間は1,500時間、製造間接費の実際発生額は¥940,000であり、配賦差異はすでに製造間接費配賦差異勘定に振り替えられている。この配賦差異を予算差異と操業度差異に分析し、それぞれの勘定への振替を仕訳する。","cands":["能率差異","操業度差異","製造間接費配賦差異","仕掛品","予算差異","売上原価","製造間接費"],"debit":[["操業度差異",70000]],"credit":[["製造間接費配賦差異",40000],["予算差異",30000]],"expl":"予算差異は予算許容額と実際発生額の差、操業度差異は固定費率×（実際操業度−基準操業度）で求め、両者の純額が配賦差異と一致する。予算許容額@250×1,500h+595,000=970,000、予算差異970,000-940,000=30,000（有利・貸方）、固定費率595,000÷1,700h=@350、操業度差異@350×(1,500h-1,700h)=△70,000（不利・借方）、純額40,000が配賦差異の借方残と一致。","syl":"2026"},{"id":"K20","cat":"工業","topic":"製造間接費","level":2,"text":"会計年度末において、製造間接費配賦差異勘定の借方残高¥180,000を売上原価勘定に振り替えた。なお当該差異はすべて正常な差異であり、少額である。この振替を仕訳する。","cands":["製品","売上原価","予算差異","製造間接費配賦差異","仕掛品","損益","製造間接費"],"debit":[["売上原価",180000]],"credit":[["製造間接費配賦差異",180000]],"expl":"正常かつ少額の原価差異は会計年度末に売上原価に賦課して処理する。借方残高180,000をそのまま売上原価の借方に振り替えるため、売上原価は180,000増加する。","syl":"2026"},{"id":"K21","cat":"工業","topic":"部門別計算","level":2,"text":"当月の製造部門費を予定配賦率により各製造指図書へ配賦する。第1製造部門は機械運転時間を基準として予定配賦率@¥800、当月の実際機械運転時間は1,200時間である。第2製造部門は直接作業時間を基準として予定配賦率@¥500、当月の実際直接作業時間は900時間である。当月の製造部門費の予定配賦を仕訳する。","cands":["第2製造部門費","仕掛品","動力部門費","第1製造部門費","製品","製造間接費","修繕部門費"],"debit":[["仕掛品",1410000]],"credit":[["第1製造部門費",960000],["第2製造部門費",450000]],"expl":"部門別計算では各製造部門費勘定から配賦基準に応じて仕掛品へ振り替える。第1: @800×1,200h=960,000、第2: @500×900h=450,000、合計1,410,000。","syl":"2026"},{"id":"K22","cat":"工業","topic":"部門別計算","level":3,"text":"当月の補助部門費を直接配賦法により各製造部門へ配賦する。動力部門費¥600,000の配賦基準である動力供給量は、第1製造部門3,000kwh、第2製造部門1,500kwh、修繕部門500kwhであった。修繕部門費¥300,000の配賦基準である修繕時間は、第1製造部門100時間、第2製造部門50時間、動力部門30時間であった。直接配賦法による補助部門費の配賦を仕訳する。","cands":["修繕部門費","第1製造部門費","仕掛品","動力部門費","第2製造部門費","工場事務部門費","製造間接費"],"debit":[["第1製造部門費",600000],["第2製造部門費",300000]],"credit":[["動力部門費",600000],["修繕部門費",300000]],"expl":"直接配賦法では補助部門間のサービス授受を無視し、製造部門への用役提供分の割合だけで配賦する。動力部門費は3,000:1,500=2:1で400,000と200,000、修繕部門費は100h:50h=2:1で200,000と100,000、第1計600,000・第2計300,000。","syl":"2026"},{"id":"K23","cat":"工業","topic":"個別原価計算","level":2,"text":"製造指図書#101（集計された製造原価¥1,850,000）の製品が完成し、ただちに得意先へ¥2,500,000で掛販売し引き渡した。完成にともなう振替と、売上および売上原価の計上をあわせて仕訳する。","cands":["売上","製品","現金","仕掛品","売上原価","売掛金","製造間接費"],"debit":[["製品",1850000],["売掛金",2500000],["売上原価",1850000]],"credit":[["仕掛品",1850000],["売上",2500000],["製品",1850000]],"expl":"完成で仕掛品から製品へ振り替え、引渡しで売上を計上するとともに同額の製品原価を売上原価へ振り替える。製造原価1,850,000が仕掛品→製品→売上原価と流れ、売価2,500,000が売掛金と売上になる。","syl":"2026"},{"id":"K24","cat":"工業","topic":"個別原価計算","level":3,"text":"製造指図書#101の製品の一部に仕損が生じたため、補修指図書#101-2を発行して補修を行った。補修指図書#101-2に集計された原価は、直接材料費¥60,000、直接労務費¥45,000、製造間接費¥30,000であった。なお、この仕損は正常な範囲のものである。補修に要した原価の仕損費勘定への振替を仕訳する。","cands":["製品","仕損品","仕掛品","材料","仕損費","売上原価","製造間接費"],"debit":[["仕損費",135000]],"credit":[["仕掛品",135000]],"expl":"補修可能な正常仕損は、補修指図書に集計した原価をいったん仕損費として把握し、のちに元の製造指図書#101へ賦課する。60,000+45,000+30,000=135,000。","syl":"2026"},{"id":"K25","cat":"工業","topic":"総合原価計算","level":2,"text":"工程別総合原価計算を採用している。当月の第1工程完成品原価は¥2,400,000であり、その全量を第2工程に投入した。第1工程完成品の第2工程への振替を仕訳する。","cands":["材料","第2工程仕掛品","製品","第1工程仕掛品","売上原価","仕掛品","製造間接費"],"debit":[["第2工程仕掛品",2400000]],"credit":[["第1工程仕掛品",2400000]],"expl":"工程別計算では前工程の完成品原価を前工程費として次工程へそのまま振り替える。第1工程完成品原価2,400,000の全量を投入したため同額を第2工程仕掛品の借方に計上する。","syl":"2026"},{"id":"K26","cat":"工業","topic":"標準原価計算","level":3,"text":"標準原価計算をパーシャル・プランで採用している。直接材料費の標準は製品1個あたり標準単価@¥400・標準消費量5kgである。当月は月初・月末とも仕掛品はなく、完成品は600個であった。当月の直接材料の実際単価は@¥420、実際消費量は2,950kgである。月末において仕掛品勘定に生じている直接材料費差異を、価格差異と数量差異に分けて振り替える処理を仕訳する。","cands":["数量差異","仕掛品","材料","賃率差異","価格差異","作業時間差異","製造間接費"],"debit":[["価格差異",59000]],"credit":[["仕掛品",39000],["数量差異",20000]],"expl":"パーシャル・プランでは仕掛品勘定の借方が実際原価のため、標準原価との差額が仕掛品勘定に残り、これを価格差異と数量差異へ振り替える。価格差異(@400-@420)×2,950kg=△59,000（不利・借方）、数量差異@400×(3,000kg-2,950kg)=+20,000（有利・貸方）、純額39,000が仕掛品の差異残高。","syl":"2026"},{"id":"K27","cat":"工業","topic":"標準原価計算","level":3,"text":"標準原価計算をシングル・プランで採用している。当月の直接材料費について、標準消費額は¥1,200,000、実際消費額は¥1,239,000であり、差異の内訳は価格差異¥59,000（不利差異）、数量差異¥20,000（有利差異）であった。材料勘定から仕掛品勘定への振替と差異の把握をあわせて仕訳する。","cands":["価格差異","材料","製品","仕掛品","数量差異","賃率差異","製造間接費"],"debit":[["仕掛品",1200000],["価格差異",59000]],"credit":[["材料",1239000],["数量差異",20000]],"expl":"シングル・プランでは仕掛品勘定へは標準原価だけを振り替え、材料勘定からの払出しは実際原価なので、その差額がこの時点で各差異勘定に計上される。仕掛品1,200,000（標準）、材料1,239,000（実際）、不利の価格差異は借方59,000、有利の数量差異は貸方20,000で貸借一致。","syl":"2026"},{"id":"K28","cat":"工業","topic":"直接原価計算","level":2,"text":"直接原価計算を採用している。当月に発生した固定製造間接費¥850,000は、製品原価に算入せず全額を当期の期間費用として損益勘定に振り替えることとした。この振替を仕訳する。","cands":["仕掛品","固定製造間接費","売上原価","損益","製品","製造間接費","製造間接費配賦差異"],"debit":[["損益",850000]],"credit":[["固定製造間接費",850000]],"expl":"直接原価計算では固定製造原価を製品原価に含めず、発生した期の期間費用として処理する。当月発生額850,000の全額を損益勘定へ振り替える。","syl":"2026"},{"id":"K29","cat":"工業","topic":"本社工場会計","level":2,"text":"本社工場会計を採用しており、工場の帳簿には材料・賃金・製造間接費・仕掛品・製品・本社の各勘定が設けられている。工場が材料¥800,000を掛けで購入し、これを受け入れた。買掛金の記帳と支払はすべて本社が行っている。工場側の仕訳をする。","cands":["当座預金","本社","材料","買掛金","工場","仕掛品","製造間接費"],"debit":[["材料",800000]],"credit":[["本社",800000]],"expl":"工場の帳簿に買掛金勘定がないため、相手勘定は本社との貸借を示す本社勘定になる。材料の受入額800,000をそのまま本社勘定の貸方に計上する。","syl":"2026"},{"id":"K30","cat":"工業","topic":"本社工場会計","level":2,"text":"本社工場会計を採用しており、製品は本社の倉庫で保管している。工場で完成した製品¥1,500,000が本社へ発送され、本社がこれを受け取った。本社側の仕訳をする。","cands":["売上","製品","材料","工場","仕掛品","本社","売上原価"],"debit":[["製品",1500000]],"credit":[["工場",1500000]],"expl":"本社の帳簿には工場勘定があり、工場からの受入れは工場勘定の貸方で処理する。受け取った完成品原価1,500,000を本社の製品勘定の借方に計上する。","syl":"2026"}];
+const DRILLS = [{"id":"D1","tag":"工業簿記","title":"総合原価計算・平均法","sub":"ボックス図を埋めて完成品原価まで（7ステップ）","text":"当社は単一製品を大量生産している。次の資料にもとづき、<b>平均法</b>によって月末仕掛品原価と完成品総合原価を求めなさい。原料はすべて<b>工程の始点</b>で投入している。<br><br>月初仕掛品：200個（加工進捗度 50%）　原料費 ¥84,000　加工費 ¥90,000<br>当月投入：1,800個　原料費 ¥756,000　加工費 ¥990,000<br>当月完成品：1,600個　月末仕掛品：400個（加工進捗度 50%）","boxes":"<div class=\"box\"><div class=\"bt\">原料費のボックス（数量：個）</div><div class=\"bgrid\"><div class=\"bcell\"><div class=\"lbl\">月初仕掛品</div><div class=\"qty num\">200個</div><div class=\"amt num\">¥84,000</div></div><div class=\"bcell\"><div class=\"lbl\">完成品</div><div class=\"qty num\">1,600個</div><div class=\"amt num\"><span class=\"blank\" data-blank=\"matDone\">？</span></div></div><div class=\"bcell\"><div class=\"lbl\">当月投入</div><div class=\"qty num\">1,800個</div><div class=\"amt num\">¥756,000</div></div><div class=\"bcell\"><div class=\"lbl\">月末仕掛品</div><div class=\"qty num\">400個</div><div class=\"amt num\"><span class=\"blank\" data-blank=\"matEnd\">？</span></div></div></div></div><div class=\"box\"><div class=\"bt\">加工費のボックス（数量：完成品換算量）</div><div class=\"bgrid\"><div class=\"bcell\"><div class=\"lbl\">月初仕掛品</div><div class=\"qty num\">200個×50%＝100個</div><div class=\"amt num\">¥90,000</div></div><div class=\"bcell\"><div class=\"lbl\">完成品</div><div class=\"qty num\">1,600個</div><div class=\"amt num\"><span class=\"blank\" data-blank=\"convDone\">？</span></div></div><div class=\"bcell\"><div class=\"lbl\">当月投入</div><div class=\"qty num\">（差引）</div><div class=\"amt num\">¥990,000</div></div><div class=\"bcell\"><div class=\"lbl\">月末仕掛品</div><div class=\"qty num\"><span class=\"blank\" data-blank=\"convQty\">？</span> 個</div><div class=\"amt num\"><span class=\"blank\" data-blank=\"convEnd\">？</span></div></div></div></div><div class=\"box\"><div class=\"bt\">まとめ</div><div class=\"bgrid one\"><div class=\"bcell\"><div class=\"lbl\">月末仕掛品原価</div><div class=\"qty num\">原料費＋加工費</div><div class=\"amt num\"><span class=\"blank\" data-blank=\"endTotal\">？</span></div></div><div class=\"bcell\"><div class=\"lbl\">完成品総合原価</div><div class=\"qty num\">原料費＋加工費</div><div class=\"amt num\"><span class=\"blank\" data-blank=\"final\">？</span></div></div></div></div>","steps":[{"key":"convQty","n":"STEP 1","q":"月末仕掛品の完成品換算量は？（400個 × 加工進捗度50%）","a":200,"unit":"個","hint":"加工費は進捗度に応じて発生するので、400個×50%＝200個ぶんとして扱います。"},{"key":"matEnd","n":"STEP 2","q":"原料費の月末仕掛品原価は？　平均法なので（月初＋当月投入）÷（完成＋月末）で平均単価を出し、月末400個分を計算。","a":168000,"unit":"円","hint":"（84,000＋756,000）÷2,000個＝@420。@420×400個＝168,000。このテンキーは簿記電卓と同じく左から順に計算するので 84000＋756000÷2000×400 の順で押せます。"},{"key":"matDone","n":"STEP 3","q":"原料費の完成品分は？（ボックスの貸借差引で出すのが速い）","a":672000,"unit":"円","hint":"84,000＋756,000−168,000＝672,000。ボックス図は「合計−月末＝完成品」の形で使います。"},{"key":"convEnd","n":"STEP 4","q":"加工費の月末仕掛品原価は？（月初90,000＋当月990,000）÷（完成1,600個＋月末換算200個）×200個","a":120000,"unit":"円","hint":"（90,000＋990,000）÷1,800個＝@600。@600×200個＝120,000。"},{"key":"convDone","n":"STEP 5","q":"加工費の完成品分は？","a":960000,"unit":"円","hint":"90,000＋990,000−120,000＝960,000。"},{"key":"endTotal","n":"STEP 6","q":"月末仕掛品原価は？（原料費＋加工費）","a":288000,"unit":"円","hint":"168,000＋120,000＝288,000。"},{"key":"final","n":"FINAL","q":"完成品総合原価は？（原料費の完成品分＋加工費の完成品分）","a":1632000,"unit":"円","hint":"672,000＋960,000＝1,632,000。"}],"final":"<div class=\"ans num\">月末仕掛品原価 ¥288,000<br>完成品総合原価 ¥1,632,000（単位原価 @¥1,020）</div><p class=\"expl\">平均法は「月初と当月を混ぜて平均単価」。次は先入先出法で同じ図を使い、違いを体で覚えましょう。</p>"},{"id":"D2","tag":"工業簿記","title":"総合原価計算・先入先出法","sub":"当月投入の換算量が鍵（5ステップ）","text":"次の資料にもとづき、<b>先入先出法</b>によって月末仕掛品原価と完成品総合原価を求めなさい。原料はすべて<b>工程の始点</b>で投入している。<br><br>月初仕掛品：200個（加工進捗度 50%）　原料費 ¥90,000　加工費 ¥45,000<br>当月投入：1,800個　原料費 ¥756,000　加工費 ¥1,020,000<br>当月完成品：1,600個　月末仕掛品：400個（加工進捗度 50%）","boxes":"<div class=\"box\"><div class=\"bt\">原料費のボックス（数量：個）</div><div class=\"bgrid\"><div class=\"bcell\"><div class=\"lbl\">月初仕掛品</div><div class=\"qty num\">200個</div><div class=\"amt num\">¥90,000</div></div><div class=\"bcell\"><div class=\"lbl\">完成品</div><div class=\"qty num\">1,600個</div><div class=\"amt num\">（差引）</div></div><div class=\"bcell\"><div class=\"lbl\">当月投入</div><div class=\"qty num\">1,800個</div><div class=\"amt num\">¥756,000</div></div><div class=\"bcell\"><div class=\"lbl\">月末仕掛品</div><div class=\"qty num\">400個</div><div class=\"amt num\"><span class=\"blank\" data-blank=\"matEnd\">？</span></div></div></div></div><div class=\"box\"><div class=\"bt\">加工費のボックス（数量：完成品換算量）</div><div class=\"bgrid\"><div class=\"bcell\"><div class=\"lbl\">月初仕掛品</div><div class=\"qty num\">100個</div><div class=\"amt num\">¥45,000</div></div><div class=\"bcell\"><div class=\"lbl\">完成品</div><div class=\"qty num\">1,600個</div><div class=\"amt num\">（差引）</div></div><div class=\"bcell\"><div class=\"lbl\">当月投入</div><div class=\"qty num\"><span class=\"blank\" data-blank=\"convIn\">？</span> 個</div><div class=\"amt num\">¥1,020,000</div></div><div class=\"bcell\"><div class=\"lbl\">月末仕掛品</div><div class=\"qty num\">200個</div><div class=\"amt num\"><span class=\"blank\" data-blank=\"convEnd\">？</span></div></div></div></div><div class=\"box\"><div class=\"bt\">まとめ</div><div class=\"bgrid one\"><div class=\"bcell\"><div class=\"lbl\">月末仕掛品原価</div><div class=\"qty num\">原料費＋加工費</div><div class=\"amt num\"><span class=\"blank\" data-blank=\"endTotal\">？</span></div></div><div class=\"bcell\"><div class=\"lbl\">完成品総合原価</div><div class=\"qty num\">月初＋当月投入−月末</div><div class=\"amt num\"><span class=\"blank\" data-blank=\"final\">？</span></div></div></div></div>","steps":[{"key":"convIn","n":"STEP 1","q":"加工費の当月投入換算量は？（完成1,600個＋月末換算200個−月初換算100個）","a":1700,"unit":"個","hint":"ボックスの貸方合計（1,600＋200）から月初の100個を引いた1,700個が当月投入分です。"},{"key":"matEnd","n":"STEP 2","q":"原料費の月末仕掛品原価は？　先入先出法では月末仕掛品は当月投入分から成るので、当月投入の単価×400個。","a":168000,"unit":"円","hint":"756,000÷1,800個＝@420。@420×400個＝168,000。月初の90,000は使いません。"},{"key":"convEnd","n":"STEP 3","q":"加工費の月末仕掛品原価は？（当月投入1,020,000 ÷ 当月投入換算量1,700個 × 200個）","a":120000,"unit":"円","hint":"1,020,000÷1,700個＝@600。@600×200個＝120,000。"},{"key":"endTotal","n":"STEP 4","q":"月末仕掛品原価は？（原料費＋加工費）","a":288000,"unit":"円","hint":"168,000＋120,000＝288,000。"},{"key":"final","n":"FINAL","q":"完成品総合原価は？（月初仕掛品原価＋当月製造費用−月末仕掛品原価）","a":1623000,"unit":"円","hint":"（90,000＋45,000）＋（756,000＋1,020,000）−288,000＝1,623,000。"}],"final":"<div class=\"ans num\">月末仕掛品原価 ¥288,000<br>完成品総合原価 ¥1,623,000</div><p class=\"expl\">先入先出法は「月末仕掛品＝当月投入の単価」。月初分はそのまま完成品に流れるので、完成品は差引で出すのが最短です。</p>"},{"id":"D3","tag":"工業簿記","title":"標準原価計算・直接材料費差異","sub":"価格差異と数量差異を分析図で（6ステップ）","text":"標準原価計算を採用している。直接材料費の標準は製品1個あたり<b>標準単価 @¥500・標準消費量 2kg</b>である。当月の生産量は1,000個（材料はすべて始点投入、月初・月末仕掛品なし）、実際の材料消費は<b>2,100kg、実際単価 @¥480</b>であった。直接材料費差異を価格差異と数量差異に分析しなさい。","boxes":"<div class=\"box\"><div class=\"bt\">標準と実際</div><div class=\"bgrid\"><div class=\"bcell\"><div class=\"lbl\">標準消費量</div><div class=\"qty num\">1,000個 × 2kg</div><div class=\"amt num\"><span class=\"blank\" data-blank=\"stdQty\">？</span> kg</div></div><div class=\"bcell\"><div class=\"lbl\">標準原価</div><div class=\"qty num\">@500 × 標準消費量</div><div class=\"amt num\"><span class=\"blank\" data-blank=\"stdCost\">？</span></div></div><div class=\"bcell\"><div class=\"lbl\">実際消費量</div><div class=\"qty num\"></div><div class=\"amt num\"><span class=\"num\">2,100 kg</span></div></div><div class=\"bcell\"><div class=\"lbl\">実際原価</div><div class=\"qty num\">@480 × 2,100kg</div><div class=\"amt num\"><span class=\"num\">¥1,008,000</span></div></div></div></div><div class=\"box\"><div class=\"bt\">差異分析図（縦：単価、横：数量）</div><div class=\"bgrid\"><div class=\"bcell\"><div class=\"lbl\">価格差異</div><div class=\"qty num\">（標準単価−実際単価）×実際消費量</div><div class=\"amt num\"><span class=\"blank\" data-blank=\"priceVar\">？</span></div></div><div class=\"bcell\"><div class=\"lbl\">価格差異の向き</div><div class=\"qty num\"></div><div class=\"amt num\"><span class=\"blank\" data-blank=\"priceDir\">？</span></div></div><div class=\"bcell\"><div class=\"lbl\">数量差異</div><div class=\"qty num\">標準単価×（標準消費量−実際消費量）</div><div class=\"amt num\"><span class=\"blank\" data-blank=\"qtyVar\">？</span></div></div><div class=\"bcell\"><div class=\"lbl\">数量差異の向き</div><div class=\"qty num\"></div><div class=\"amt num\"><span class=\"blank\" data-blank=\"qtyDir\">？</span></div></div></div></div>","steps":[{"key":"stdQty","n":"STEP 1","q":"標準消費量は？（1,000個 × 2kg）","a":2000,"unit":"kg","hint":"標準は「作った数量に対して本来使うべき量」。1,000個×2kg＝2,000kg。"},{"key":"stdCost","n":"STEP 2","q":"標準直接材料費は？（@500 × 標準消費量）","a":1000000,"unit":"円","hint":"@500×2,000kg＝1,000,000。実際原価1,008,000との差8,000が総差異です。"},{"key":"priceVar","n":"STEP 3","q":"価格差異の金額は？（標準単価−実際単価）×実際消費量。金額だけ入力。","a":42000,"unit":"円","hint":"(500−480)×2,100kg＝42,000。実際消費量に掛けるのがポイント。"},{"key":"priceDir","n":"STEP 4","q":"価格差異は有利・不利どちら？","type":"choice","options":["有利差異","不利差異"],"a":"有利差異","hint":"実際単価480が標準500より安かったので有利（貸方差異）。"},{"key":"qtyVar","n":"STEP 5","q":"数量差異の金額は？ 標準単価×（標準消費量−実際消費量）。金額だけ入力。","a":50000,"unit":"円","hint":"500×(2,000−2,100)＝△50,000。標準単価に掛けるのがポイント。"},{"key":"qtyDir","n":"FINAL","q":"数量差異は有利・不利どちら？","type":"choice","options":["有利差異","不利差異"],"a":"不利差異","hint":"標準より100kg多く使ったので不利（借方差異）。有利42,000−不利50,000＝総差異8,000不利と一致。"}],"final":"<div class=\"ans num\">価格差異 ¥42,000（有利）<br>数量差異 ¥50,000（不利）<br>総差異 ¥8,000（不利）</div><p class=\"expl\">分析図は「価格差異は実際数量の幅、数量差異は標準単価の高さ」。混ぜなければ絶対に間違えません。</p>"},{"id":"D4","tag":"工業簿記","title":"直接原価計算・CVP分析","sub":"損益分岐点から安全余裕率まで（6ステップ）","text":"当社の当期の資料は次のとおりである。<b>販売単価 @¥2,000、1個あたり変動費 @¥1,200、固定費 ¥1,600,000</b>、当期の販売量は2,500個（売上高 ¥5,000,000）であった。損益分岐点売上高、目標営業利益 ¥800,000 を達成する売上高、安全余裕率を求めなさい。","boxes":"<div class=\"box\"><div class=\"bt\">直接原価計算方式の損益計算書（当期）</div><div class=\"bgrid one\"><div class=\"bcell\"><div class=\"lbl\">売上高</div><div class=\"qty num\">2,500個 × @2,000</div><div class=\"amt num\"><span class=\"num\">¥5,000,000</span></div></div><div class=\"bcell\"><div class=\"lbl\">変動費</div><div class=\"qty num\">2,500個 × @1,200</div><div class=\"amt num\"><span class=\"num\">¥3,000,000</span></div></div><div class=\"bcell\"><div class=\"lbl\">貢献利益</div><div class=\"qty num\">1個あたり <span class=\"blank\" data-blank=\"cmUnit\">？</span> 円</div><div class=\"amt num\"><span class=\"num\">¥2,000,000</span></div></div><div class=\"bcell\"><div class=\"lbl\">貢献利益率</div><div class=\"qty num\">貢献利益 ÷ 売上高</div><div class=\"amt num\"><span class=\"blank\" data-blank=\"cmRate\">？</span></div></div><div class=\"bcell\"><div class=\"lbl\">固定費</div><div class=\"qty num\"></div><div class=\"amt num\"><span class=\"num\">¥1,600,000</span></div></div><div class=\"bcell\"><div class=\"lbl\">営業利益</div><div class=\"qty num\"></div><div class=\"amt num\"><span class=\"num\">¥400,000</span></div></div></div></div><div class=\"box\"><div class=\"bt\">CVP分析</div><div class=\"bgrid\"><div class=\"bcell\"><div class=\"lbl\">損益分岐点売上高</div><div class=\"qty num\">固定費 ÷ 貢献利益率</div><div class=\"amt num\"><span class=\"blank\" data-blank=\"bepSales\">？</span></div></div><div class=\"bcell\"><div class=\"lbl\">損益分岐点販売量</div><div class=\"qty num\">固定費 ÷ 1個あたり貢献利益</div><div class=\"amt num\"><span class=\"blank\" data-blank=\"bepQty\">？</span> 個</div></div><div class=\"bcell\"><div class=\"lbl\">目標利益達成売上高</div><div class=\"qty num\">（固定費＋目標利益）÷ 貢献利益率</div><div class=\"amt num\"><span class=\"blank\" data-blank=\"targetSales\">？</span></div></div><div class=\"bcell\"><div class=\"lbl\">安全余裕率</div><div class=\"qty num\">（売上高−損益分岐点）÷ 売上高</div><div class=\"amt num\"><span class=\"blank\" data-blank=\"safety\">？</span></div></div></div></div>","steps":[{"key":"cmUnit","n":"STEP 1","q":"1個あたりの貢献利益は？（販売単価−変動費）","a":800,"unit":"円","hint":"2,000−1,200＝800。"},{"key":"cmRate","n":"STEP 2","q":"貢献利益率は？（%で入力。800÷2,000）","a":40,"unit":"%","hint":"800÷2,000＝0.4 → 40%。"},{"key":"bepSales","n":"STEP 3","q":"損益分岐点売上高は？（固定費 ÷ 貢献利益率）","a":4000000,"unit":"円","hint":"1,600,000÷0.4＝4,000,000。テンキーなら 1600000÷40×100。"},{"key":"bepQty","n":"STEP 4","q":"損益分岐点の販売量は？（固定費 ÷ 1個あたり貢献利益）","a":2000,"unit":"個","hint":"1,600,000÷800＝2,000個。4,000,000÷2,000でも同じ。"},{"key":"targetSales","n":"STEP 5","q":"目標営業利益 ¥800,000 を達成する売上高は？（固定費＋目標利益）÷ 貢献利益率","a":6000000,"unit":"円","hint":"(1,600,000＋800,000)÷0.4＝6,000,000。"},{"key":"safety","n":"FINAL","q":"安全余裕率は？（%で入力。(売上高−損益分岐点売上高)÷売上高）","a":20,"unit":"%","hint":"(5,000,000−4,000,000)÷5,000,000＝20%。"}],"final":"<div class=\"ans num\">損益分岐点売上高 ¥4,000,000<br>目標利益達成売上高 ¥6,000,000<br>安全余裕率 20%</div><p class=\"expl\">CVPは全部「固定費 ÷ 貢献利益率」の変形。貢献利益率さえ出せば残りは割り算だけです。</p>"}];
+const TOPIC_ORDER = {
+  "商業":["商品売買","債権債務","現金預金","有価証券","固定資産","無形固定資産","リース","引当金","外貨建取引","税金","税効果会計","純資産","収益認識","サービス業","本支店会計","連結会計","決算整理"],
+  "工業":["材料費","労務費","経費","製造間接費","部門別計算","個別原価計算","総合原価計算","標準原価計算","直接原価計算","本社工場会計","製品販売"]
+};
+const INTERVALS = [0,1,3,7,14,30]; // box → 次回までの日数
+const APP_URL = "https://nekoze32.github.io/boki2-trainer/";
 
 /* ================= utils ================= */
 const $ = s => document.querySelector(s);
 const yen = n => "¥" + n.toLocaleString("ja-JP");
+const fmtDate = d => d.getFullYear() + "-" + String(d.getMonth()+1).padStart(2,"0") + "-" + String(d.getDate()).padStart(2,"0");
+const todayStr = () => fmtDate(new Date());
+const addDays = (s, n) => { const d = new Date(s + "T00:00:00"); d.setDate(d.getDate() + n); return fmtDate(d); };
+const shuffle = a => { for(let i=a.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [a[i],a[j]]=[a[j],a[i]]; } return a; };
+const DATA_VER = 2;
+let storeWarned = false;
 const store = {
   get(k, d){ try{ const v = localStorage.getItem("bokitore:"+k); return v===null ? d : JSON.parse(v); }catch(e){ return d; } },
-  set(k, v){ try{ localStorage.setItem("bokitore:"+k, JSON.stringify(v)); }catch(e){} },
+  set(k, v){ try{ localStorage.setItem("bokitore:"+k, JSON.stringify(v)); }catch(e){ if(!storeWarned){ storeWarned = true; setTimeout(() => toast("この端末に学習記録を保存できません（プライベートモードや容量不足）"), 0); } } },
+  del(k){ try{ localStorage.removeItem("bokitore:"+k); }catch(e){} },
 };
+const isObj = x => x && typeof x === "object" && !Array.isArray(x);
+const nn = x => (typeof x === "number" && isFinite(x) && x >= 0) ? Math.floor(x) : 0;
+const esc = s => String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+
+/* ================= persistent state ================= */
+function getSettings(){
+  const s = store.get("settings", null);
+  const d = {cat:"both", n:10, theme:"system"};
+  if(!isObj(s)) return d;
+  return {
+    cat: ["both","商業","工業"].includes(s.cat) ? s.cat : d.cat,
+    n: [3,5,10,20].includes(s.n) ? s.n : d.n,
+    theme: ["system","light","dark"].includes(s.theme) ? s.theme : d.theme,
+  };
+}
+let settings = getSettings();
+function saveSettings(){ store.set("settings", settings); applyTheme(); }
+function applyTheme(){
+  const r = document.documentElement;
+  if(settings.theme === "system") r.removeAttribute("data-theme"); else r.setAttribute("data-theme", settings.theme);
+}
+function getProgress(){
+  const p = store.get("progress", null);
+  if(!isObj(p)) return {};
+  const out = {};
+  for(const id in p){
+    const r = p[id]; if(!isObj(r)) continue;
+    out[id] = {box:Math.min(nn(r.box),5), due:/^\d{4}-\d{2}-\d{2}$/.test(r.due) ? r.due : todayStr(), seen:nn(r.seen), wrong:nn(r.wrong)};
+  }
+  return out;
+}
+let progress = getProgress();
+function getDays(){ const d = store.get("days", null); return isObj(d) ? d : {}; }
+let days = getDays();
+function getDrillDone(){ const d = store.get("drills", null); return isObj(d) ? d : {}; }
+let drillDone = getDrillDone();
+
+function recordAnswer(id, correct){
+  const t = todayStr();
+  const r = progress[id] || {box:0, due:t, seen:0, wrong:0};
+  r.seen++;
+  if(correct){ r.box = Math.min(r.box + 1, 5); r.due = addDays(t, INTERVALS[r.box]); }
+  else { r.wrong++; r.box = 0; r.due = addDays(t, 1); }  // 不正解は翌日の復習へ（同日の再挑戦はセッション内キューで行う）
+  progress[id] = r; store.set("progress", progress);
+  days[t] = nn(days[t]) + 1; store.set("days", days);
+}
+function streakDays(){
+  const t = todayStr(); let d = days[t] ? t : addDays(t, -1); let n = 0;
+  while(days[d]){ n++; d = addDays(d, -1); }
+  return n;
+}
+function dueList(){ const t = todayStr(); return PROBLEMS.filter(p => progress[p.id] && progress[p.id].seen > 0 && progress[p.id].due <= t); }
+function inCat(p){ return settings.cat === "both" || p.cat === settings.cat; }
 
 /* ================= screens ================= */
-let mode = "home"; // home | quiz | done | box
+let mode = "home";
 function show(name){
   mode = name;
   document.querySelectorAll(".screen").forEach(s => s.classList.remove("on"));
   $("#scr-"+name).classList.add("on");
   window.scrollTo(0,0);
   updateCta();
-  if(name==="home") renderStats();
+  if(name === "home") renderHome();
 }
 document.querySelectorAll("[data-home]").forEach(b => b.addEventListener("click", () => show("home")));
 
-/* ================= stats ================= */
-function getStats(){
-  const raw = store.get("stats", null);
-  const n = x => (typeof x === "number" && isFinite(x) && x >= 0) ? Math.floor(x) : 0;
-  if(!raw || typeof raw !== "object") return {done:0, correct:0, streak:0};
-  return {done:n(raw.done), correct:n(raw.correct), streak:n(raw.streak)};
+/* ================= home ================= */
+function topicStats(){
+  const m = {};
+  for(const p of PROBLEMS){
+    const k = p.cat + "|" + p.topic;
+    if(!m[k]) m[k] = {cat:p.cat, topic:p.topic, n:0, boxSum:0, seen:0};
+    m[k].n++;
+    const r = progress[p.id];
+    if(r){ m[k].boxSum += r.box; if(r.seen) m[k].seen++; }
+  }
+  const order = k => { const [cat, t] = k.split("|"); const i = (TOPIC_ORDER[cat]||[]).indexOf(t); return (cat === "商業" ? 0 : 100) + (i < 0 ? 50 : i); };
+  return Object.keys(m).sort((a,b) => order(a) - order(b)).map(k => m[k]);
 }
-function renderStats(){
-  const st = getStats();
-  $("#st-done").textContent = st.done;
-  $("#st-rate").textContent = st.done ? Math.round(st.correct/st.done*100) + "%" : "–";
-  $("#st-streak").textContent = st.streak;
-}
-function record(correct){
-  const st = getStats();
-  st.done++; if(correct){ st.correct++; st.streak++; } else st.streak = 0;
-  store.set("stats", st);
-}
+function renderHome(){
+  const t = todayStr();
+  const due = dueList().filter(inCat);
+  $("#h-due").textContent = due.length;
+  $("#h-today").textContent = nn(days[t]);
+  $("#h-days").textContent = streakDays();
+  const pool = PROBLEMS.filter(inCat);
+  const fresh = pool.filter(p => !progress[p.id] || !progress[p.id].seen).length;
+  const nRev = Math.min(due.length, settings.n), nNew = Math.min(fresh, settings.n - nRev);
+  $("#btn-today").textContent = (nRev + nNew) ? "きょうの学習を始める（復習" + nRev + "・新規" + nNew + "）" : "復習待ちなし · 定着の低い順にもう一周";
+  const ss = savedSession();
+  $("#btn-resume").hidden = !ss;
+  if(ss) $("#btn-resume").textContent = "前回の続きから（" + (ss.qi + 1) + "/" + ss.queue.length + "）";
 
-/* ================= sheet plumbing ================= */
+  const map = $("#h-tmap"); map.innerHTML = "";
+  let mastered = 0, total = 0;
+  for(const s of topicStats()){
+    if(settings.cat !== "both" && s.cat !== settings.cat) continue;
+    const pct = Math.round(s.boxSum / (s.n * 5) * 100);
+    total += s.n; mastered += s.boxSum / 5;
+    const b = document.createElement("button"); b.className = "tchip";
+    b.innerHTML = '<div class="n"><span>' + esc(s.topic) + '</span><small class="num">' + s.seen + '/' + s.n + '</small></div><div class="bar"><div style="width:' + pct + '%"></div></div>';
+    b.addEventListener("click", () => startSession("topic", {cat:s.cat, topic:s.topic}));
+    map.appendChild(b);
+  }
+  $("#h-mapnote").textContent = "定着率 " + (total ? Math.round(mastered / total * 100) : 0) + "%（数字は着手/問題数）";
+
+  const dl = $("#h-drills"); dl.innerHTML = "";
+  for(const d of DRILLS){
+    const b = document.createElement("button"); b.className = "drill";
+    b.innerHTML = '<span class="tag">' + esc(d.tag) + '</span><div class="body"><h3>' + esc(d.title) + '</h3><p>' + esc(d.sub) + '</p></div>' + (drillDone[d.id] ? '<span class="done">✓ ' + nn(drillDone[d.id]) + '回</span>' : '');
+    b.addEventListener("click", () => startDrill(d.id));
+    dl.appendChild(b);
+  }
+  const nS = PROBLEMS.filter(p => p.cat === "商業").length, nK = PROBLEMS.filter(p => p.cat === "工業").length;
+  $("#h-foot").innerHTML = "仕訳 " + (nS + nK) + " 問（商業 " + nS + "・工業 " + nK + "）＋計算ドリル " + DRILLS.length + " 本。問題はすべてオリジナル、2026年度の出題区分に準拠。<br>正解した問題は 1→3→7→14→30日後に復習へ回ります。右下の 🖩 で電卓とメモ。";
+}
+$("#btn-today").addEventListener("click", () => startSession("today"));
+$("#btn-resume").addEventListener("click", resumeSession);
+
+/* ================= sheets ================= */
 const scrim = $("#scrim");
-let openSheetEl = null;
+let openSheetEl = null, lastFocus = null;
+document.querySelectorAll(".sheet").forEach(s => { s.inert = true; s.setAttribute("aria-modal","true"); s.tabIndex = -1; });
 function openSheet(el){
   closeSheet();
-  openSheetEl = el; el.classList.add("on"); scrim.classList.add("on");
+  lastFocus = document.activeElement;
+  openSheetEl = el; el.inert = false; el.classList.add("on"); scrim.classList.add("on");
+  $("#app").inert = true; $(".actionbar").inert = true;
+  setTimeout(() => el.focus(), 30);
 }
 function closeSheet(){
-  if(openSheetEl){ openSheetEl.classList.remove("on"); openSheetEl = null; }
+  if(openSheetEl){ openSheetEl.classList.remove("on"); openSheetEl.inert = true; openSheetEl = null; }
   scrim.classList.remove("on");
+  $("#app").inert = false; $(".actionbar").inert = false;
+  if(lastFocus && lastFocus.focus){ try{ lastFocus.focus(); }catch(e){} }
+  lastFocus = null;
 }
 scrim.addEventListener("click", closeSheet);
+document.addEventListener("keydown", e => { if(e.key === "Escape" && openSheetEl) closeSheet(); });
+document.querySelectorAll(".sheet .closex").forEach(b => b.addEventListener("click", closeSheet));
 
-/* ================= numpad (calculator semantics) ================= */
+/* toast */
+let toastTimer = null;
+function toast(msg){
+  const t = $("#toast"); t.textContent = msg; t.classList.add("on");
+  clearTimeout(toastTimer); toastTimer = setTimeout(() => t.classList.remove("on"), 2600);
+}
+
+function pickChip(title, options, cb){
+  $("#acct-title").textContent = title;
+  const wrap = $("#acct-chips"); wrap.innerHTML = "";
+  options.forEach(name => {
+    const c = document.createElement("button"); c.className = "chip"; c.textContent = name;
+    c.addEventListener("click", () => { closeSheet(); cb(name); });
+    wrap.appendChild(c);
+  });
+  openSheet($("#sheet-acct"));
+}
+
+/* ================= calculator ================= */
 function makeCalc(valEl){
   const c = {acc:null, op:null, cur:"", fresh:false, err:false};
   c.render = () => {
     if(c.err){ valEl.textContent = "E"; return; }
     const shown = c.cur !== "" ? c.cur : (c.acc !== null ? String(c.acc) : "0");
-    valEl.textContent = Number(shown).toLocaleString("ja-JP");
+    valEl.textContent = Number(shown).toLocaleString("ja-JP", {maximumFractionDigits:2});
   };
   c.digit = d => {
     if(c.err) c.clear();
     if(c.fresh){ c.cur = ""; c.fresh = false; }
     if(c.cur.length >= 12) return;
-    c.cur = (c.cur === "0" ? "" : c.cur) + d;
-    c.render();
+    c.cur = ((c.cur === "0" ? "" : c.cur) + d).slice(0, 12); c.render();
   };
   c.apply = () => {
     const x = Number(c.cur || 0);
-    if(c.acc === null){ c.acc = x; }
+    if(c.acc === null) c.acc = x;
     else if(c.op === "＋") c.acc += x;
     else if(c.op === "−") c.acc -= x;
     else if(c.op === "×") c.acc *= x;
     else if(c.op === "÷"){ if(x === 0){ c.err = true; c.acc = 0; } else c.acc = c.acc / x; }
-    c.acc = Math.round(c.acc * 100) / 100;
+    // 内部は丸めない（表示だけ小数2桁まで）。整数化は回答確定時のみ
+    c.acc = Math.round(c.acc * 1e9) / 1e9;
   };
   c.pressOp = op => {
     if(c.err){ c.render(); return; }
-    if(c.cur !== "" ) c.apply();
-    else if(c.acc === null) c.acc = 0;
+    if(c.cur !== "") c.apply(); else if(c.acc === null) c.acc = 0;
     if(op === "＝"){ c.cur = String(c.acc); c.acc = null; c.op = null; c.fresh = true; }
     else { c.op = op; c.cur = ""; }
     c.render();
   };
   c.back = () => { c.cur = c.cur.slice(0,-1); c.render(); };
   c.clear = () => { c.acc=null; c.op=null; c.cur=""; c.fresh=false; c.err=false; c.render(); };
-  c.value = () => {
+  c.value = raw => {   // raw=true なら丸めない（メモ電卓用）。回答入力は整数に丸める
     if(c.err) return 0;
-    if(c.op !== null && c.cur !== "") c.pressOp("＝");  // ＝を押し忘れてもOKで計算を確定する
+    if(c.op !== null && c.cur !== "") c.pressOp("＝");
     if(c.err) return 0;
-    if(c.cur !== "") return Math.round(Number(c.cur));
-    if(c.acc !== null) return Math.round(c.acc);
-    return 0;
+    const v = c.cur !== "" ? Number(c.cur) : (c.acc !== null ? c.acc : 0);
+    return raw ? v : Math.round(v);
   };
   return c;
 }
@@ -532,91 +588,130 @@ function wirePad(rootSel, calc, onOk){
     });
   });
 }
-
-/* main numpad (answer input) */
 const npCalc = makeCalc($("#np-val"));
-let npCommit = null, npDelete = null;
+let npCommit = null, npDelete = null, npAllowZero = false;
 function askNumber(ctxLabel, cb, opts){
   opts = opts || {};
   npCalc.clear();
   if(opts.prefill){ npCalc.cur = String(opts.prefill); npCalc.fresh = true; npCalc.render(); }
   $("#np-ctx").textContent = ctxLabel;
-  npCommit = cb;
-  npDelete = opts.onDelete || null;
+  npCommit = cb; npDelete = opts.onDelete || null; npAllowZero = !!opts.allowZero;
   $("#np-del").className = "npdelbtn" + (npDelete ? " on" : "");
   openSheet($("#sheet-num"));
 }
-$("#np-del").addEventListener("click", () => {
-  const cb = npDelete; npDelete = null; npCommit = null;
-  closeSheet();
-  if(cb) cb();
-});
+$("#np-del").addEventListener("click", () => { const cb = npDelete; npDelete = null; npCommit = null; closeSheet(); if(cb) cb(); });
 wirePad("#sheet-num", npCalc, () => {
-  const v = npCalc.value();
-  if(v <= 0) return;
-  const cb = npCommit; npCommit = null;
-  closeSheet();
-  if(cb) cb(v);
+  if(npCalc.err) return;
+  const v = npCalc.value(); if(v < 0 || (v === 0 && !npAllowZero)) return;
+  const cb = npCommit; npCommit = null; closeSheet(); if(cb) cb(v);
 });
-
-/* free calculator + memo drawer */
 const cpCalc = makeCalc($("#cp-val"));
 wirePad("#sheet-calc", cpCalc, () => {
   if(cpCalc.err) return;
   const memo = $("#memo");
-  memo.value = (memo.value ? memo.value + "\n" : "") + cpCalc.value().toLocaleString("ja-JP");
+  memo.value = (memo.value ? memo.value + "\n" : "") + cpCalc.value(true).toLocaleString("ja-JP", {maximumFractionDigits:2});
   store.set("memo", memo.value);
 });
 const savedMemo = store.get("memo", "");
 $("#memo").value = typeof savedMemo === "string" ? savedMemo : "";
 $("#memo").addEventListener("input", e => store.set("memo", e.target.value));
-$("#fab-calc").addEventListener("click", () => {
-  if(openSheetEl === $("#sheet-calc")) closeSheet(); else openSheet($("#sheet-calc"));
+$("#fab-calc").addEventListener("click", () => { if(openSheetEl === $("#sheet-calc")) closeSheet(); else openSheet($("#sheet-calc")); });
+
+/* ================= settings ================= */
+function renderSettings(){
+  document.querySelectorAll(".seg").forEach(seg => {
+    const key = seg.dataset.set;
+    seg.querySelectorAll("button").forEach(b => b.classList.toggle("sel", String(settings[key]) === b.dataset.v));
+  });
+}
+document.querySelectorAll(".seg button").forEach(b => b.addEventListener("click", () => {
+  const key = b.closest(".seg").dataset.set;
+  settings[key] = key === "n" ? Number(b.dataset.v) : b.dataset.v;
+  saveSettings(); renderSettings(); if(mode === "home") renderHome();
+}));
+$("#btn-settings").addEventListener("click", () => { renderSettings(); openSheet($("#sheet-set")); });
+let resetArmed = false;
+$("#btn-reset").addEventListener("click", () => {
+  if(!resetArmed){ resetArmed = true; $("#btn-reset").textContent = "本当にリセットする（もう一度タップ）"; setTimeout(() => { resetArmed = false; $("#btn-reset").textContent = "学習データをリセット（2回タップ）"; }, 3000); return; }
+  ["progress","days","drills","memo","session"].forEach(k => store.del(k));
+  progress = {}; days = {}; drillDone = {}; $("#memo").value = "";
+  resetArmed = false; $("#btn-reset").textContent = "学習データをリセット（2回タップ）";
+  closeSheet(); renderHome();
 });
 
-/* ================= 仕訳ドリル ================= */
-let queue = [], qi = 0, sessionDone = 0, sessionCorrect = 0, sessionTotal = 0;
-let entry = {debit:[], credit:[]};
-let answered = false;
-let retried = new Set();
-
-$("#btn-shiwake").addEventListener("click", () => {
-  queue = PROBLEMS.map((_,i) => i);
-  qi = 0; sessionDone = 0; sessionCorrect = 0; sessionTotal = PROBLEMS.length;
-  retried = new Set();
+/* ================= session (仕訳) ================= */
+let queue = [], qi = 0, entry = {debit:[], credit:[]}, answered = false, retried = new Set(), retries = {};
+let sessionLog = [];
+const MAX_RETRY = 2; // 同一セッション内で最大2回まで末尾に再出題（その後は翌日の復習へ）
+function saveSession(){ store.set("session", {v:DATA_VER, queue, qi, answered, entry, log:sessionLog, retries, retried:[...retried]}); }
+function clearSession(){ store.del("session"); }
+function savedSession(){
+  const s = store.get("session", null);
+  if(!isObj(s) || s.v !== DATA_VER || !Array.isArray(s.queue) || !Array.isArray(s.log)) return null;
+  const q = s.queue.filter(id => PROBLEMS.some(p => p.id === id));
+  let qi2 = nn(s.qi);
+  if(s.answered) qi2++;          // 判定済みの問題は再開時に飛ばす（二重採点を防ぐ）
+  if(!q.length || qi2 >= q.length) return null;
+  const okLine = l => Array.isArray(l) && typeof l[0] === "string" && typeof l[1] === "number";
+  const e = isObj(s.entry) && !s.answered ? {debit:(s.entry.debit||[]).filter(okLine), credit:(s.entry.credit||[]).filter(okLine)} : {debit:[], credit:[]};
+  return {queue:q, qi:qi2, entry:e, log:s.log.filter(x => isObj(x) && typeof x.id === "string"), retries:isObj(s.retries) ? s.retries : {}, retried:Array.isArray(s.retried) ? s.retried : []};
+}
+function resumeSession(){
+  const s = savedSession(); if(!s) return;
+  queue = s.queue; qi = s.qi; sessionLog = s.log; retries = s.retries; retried = new Set(s.retried);
   show("quiz"); renderQ();
-});
-
-function curP(){ return PROBLEMS[queue[qi]]; }
-
+  entry = s.entry; renderLines(); updateCta();   // 入力途中の仕訳も復元
+}
+function byPriority(a, b){
+  const ra = progress[a.id], rb = progress[b.id];
+  const da = ra && ra.seen ? ra.due : "9999", db = rb && rb.seen ? rb.due : "9999";
+  if(da !== db) return da < db ? -1 : 1;
+  return (ra ? ra.box : 0) - (rb ? rb.box : 0);
+}
+function startSession(kind, opt){
+  let list = [];
+  if(kind === "today"){
+    const due = shuffle(dueList().filter(inCat)).sort(byPriority).slice(0, settings.n);
+    const fresh = shuffle(PROBLEMS.filter(p => inCat(p) && !(progress[p.id] && progress[p.id].seen))).slice(0, settings.n - due.length);
+    list = due.concat(fresh);
+    if(!list.length){   // 復習待ちも新規も無いときだけ、定着の低い順にもう一周（期日前の問題を無理に混ぜない）
+      const rest = shuffle(PROBLEMS.filter(inCat)).sort((a,b) => (progress[a.id]||{box:0}).box - (progress[b.id]||{box:0}).box);
+      list = rest.slice(0, settings.n);
+    }
+  } else if(kind === "topic"){
+    list = shuffle(PROBLEMS.filter(p => p.cat === opt.cat && p.topic === opt.topic)).sort(byPriority).slice(0, settings.n);
+  } else if(kind === "retry"){
+    list = opt.ids.map(id => PROBLEMS.find(p => p.id === id)).filter(Boolean);
+  }
+  if(!list.length) return;
+  queue = list.map(p => p.id); qi = 0; retried = new Set(); retries = {}; sessionLog = [];
+  saveSession();
+  show("quiz"); renderQ();
+}
+const curP = () => PROBLEMS.find(p => p.id === queue[qi]);
 function renderQ(){
   const p = curP();
-  answered = false;
-  entry = {debit:[], credit:[]};
-  $("#q-cat").textContent = p.cat + "簿記";
+  answered = false; entry = {debit:[], credit:[]};
+  $("#q-cat").textContent = p.cat + "簿記 · " + p.topic;
+  $("#q-lv").textContent = "●".repeat(p.level || 1) + "○".repeat(3 - (p.level || 1));
+  const r = progress[p.id];
+  $("#q-rev").textContent = retried.has(p.id) ? "再挑戦" : (r && r.seen ? "復習" : "");
   $("#q-text").textContent = p.text;
   $("#q-prog").style.width = (qi / queue.length * 100) + "%";
   $("#q-count").textContent = (qi+1) + "/" + queue.length;
   $("#q-fb").className = "fb";
-  renderLines();
-  updateCta();
+  renderLines(); updateCta();
 }
-
 function renderLines(){
   for(const side of ["debit","credit"]){
-    const wrap = side === "debit" ? $("#q-dlines") : $("#q-clines");
-    wrap.innerHTML = "";
+    const wrap = side === "debit" ? $("#q-dlines") : $("#q-clines"); wrap.innerHTML = "";
     entry[side].forEach((ln, idx) => {
-      const b = document.createElement("button");
-      b.className = "jline";
-      b.innerHTML = '<span class="a">' + ln[0] + '</span><span class="m num">' + yen(ln[1]) + '</span><span class="del">タップで修正</span>';
+      const b = document.createElement("button"); b.className = "jline";
+      b.innerHTML = '<span class="a">' + esc(ln[0]) + '</span><span class="m num">' + yen(ln[1]) + '</span><span class="del">タップで修正</span>';
       b.addEventListener("click", () => {
         if(answered) return;
-        askNumber((side === "debit" ? "借方 " : "貸方 ") + ln[0] + " の金額を修正", v => {
-          entry[side][idx][1] = v; renderLines(); updateCta();
-        }, {prefill: ln[1], onDelete: () => {
-          entry[side].splice(idx,1); renderLines(); updateCta();
-        }});
+        askNumber((side === "debit" ? "借方 " : "貸方 ") + ln[0] + " の金額を修正", v => { entry[side][idx][1] = v; renderLines(); updateCta(); },
+          {prefill: ln[1], onDelete: () => { entry[side].splice(idx,1); renderLines(); updateCta(); }});
       });
       wrap.appendChild(b);
     });
@@ -625,168 +720,159 @@ function renderLines(){
   const bal = $("#q-bal");
   bal.textContent = "借方 " + dt.toLocaleString("ja-JP") + " ／ 貸方 " + ct.toLocaleString("ja-JP");
   bal.className = "baltag num" + (dt>0 && dt===ct ? " ok" : "");
+  if(mode === "quiz" && !answered) saveSession();   // 入力途中も保存
 }
-
-document.querySelectorAll(".addline").forEach(btn => {
-  btn.addEventListener("click", () => {
-    if(answered) return;
-    const side = btn.dataset.side;
-    const p = curP();
-    $("#acct-title").textContent = (side === "debit" ? "借方" : "貸方") + "の科目を選ぶ";
-    const wrap = $("#acct-chips");
-    wrap.innerHTML = "";
-    p.cands.forEach(name => {
-      const c = document.createElement("button");
-      c.className = "chip"; c.textContent = name;
-      c.addEventListener("click", () => {
-        closeSheet();
-        askNumber((side === "debit" ? "借方 " : "貸方 ") + name + " の金額", v => {
-          entry[side].push([name, v]); renderLines(); updateCta();
-        });
-      });
-      wrap.appendChild(c);
-    });
-    openSheet($("#sheet-acct"));
+document.querySelectorAll(".addline").forEach(btn => btn.addEventListener("click", () => {
+  if(answered) return;
+  const side = btn.dataset.side, p = curP();
+  const used = entry[side].map(l => l[0]);
+  pickChip((side === "debit" ? "借方" : "貸方") + "の科目を選ぶ", shuffle(p.cands.filter(c => !used.includes(c))), name => {
+    askNumber((side === "debit" ? "借方 " : "貸方 ") + name + " の金額", v => { entry[side].push([name, v]); renderLines(); updateCta(); });
   });
-});
-
+}));
 function sideEq(a, b){
   if(a.length !== b.length) return false;
   const rest = b.map(x => x[0] + "|" + x[1]);
-  for(const ln of a){
-    const k = ln[0] + "|" + ln[1];
-    const i = rest.indexOf(k);
-    if(i < 0) return false;
-    rest.splice(i,1);
-  }
+  for(const ln of a){ const i = rest.indexOf(ln[0] + "|" + ln[1]); if(i < 0) return false; rest.splice(i,1); }
   return true;
 }
-
 function checkQ(){
   const p = curP();
-  const ok = sideEq(entry.debit, p.debit) && sideEq(entry.credit, p.credit);
+  const answers = [p].concat(p.alts || []);   // 別解（例：二段階仕訳）も正解にする
+  const ok = answers.some(a => sideEq(entry.debit, a.debit) && sideEq(entry.credit, a.credit));
   answered = true;
-  sessionDone++;
-  if(ok) sessionCorrect++;
-  record(ok);
+  const first = !retried.has(p.id);
+  if(first) sessionLog.push({id:p.id, ok});
+  recordAnswer(p.id, ok);
   const fb = $("#q-fb");
   fb.className = "fb on " + (ok ? "good" : "bad");
   $("#q-fb-title").textContent = ok ? "正解！" : "不正解…";
-  const ansHtml = [];
-  const rows = Math.max(p.debit.length, p.credit.length);
+  const rows = Math.max(p.debit.length, p.credit.length), html = [];
   for(let i=0;i<rows;i++){
-    const d = p.debit[i] ? p.debit[i][0] + "　" + yen(p.debit[i][1]) : "";
-    const c = p.credit[i] ? p.credit[i][0] + "　" + yen(p.credit[i][1]) : "";
-    ansHtml.push('<div class="ansrow"><span class="num">' + d + '</span><span class="num">' + c + '</span></div>');
+    const d = p.debit[i] ? esc(p.debit[i][0]) + "　" + yen(p.debit[i][1]) : "";
+    const c = p.credit[i] ? esc(p.credit[i][0]) + "　" + yen(p.credit[i][1]) : "";
+    html.push('<div class="ansrow"><span class="num">' + d + '</span><span class="num">' + c + '</span></div>');
   }
-  $("#q-fb-ans").innerHTML = '<div class="ans">' + ansHtml.join("") + '</div>';
+  $("#q-fb-ans").innerHTML = '<div class="ans">' + html.join("") + '</div>';
   $("#q-fb-expl").textContent = p.expl;
-  if(!ok && !retried.has(queue[qi])){
-    retried.add(queue[qi]);
-    queue.push(queue[qi]);   // もう一度、最後に出す
+  const r = progress[p.id];
+  if(!ok){
+    retries[p.id] = nn(retries[p.id]) + 1;
+    if(retries[p.id] <= MAX_RETRY){ retried.add(p.id); queue.push(p.id); }
   }
+  $("#q-fb-next").textContent = ok ? "次の復習：" + INTERVALS[r.box] + "日後（" + r.due + "）"
+    : (retries[p.id] <= MAX_RETRY ? "このセッションの最後にもう一度出ます。明日の復習にも入ります。" : "きょうはここまで。明日の復習に入ります。");
+  saveSession();
   fb.scrollIntoView({behavior:"smooth", block:"nearest"});
-  // 連打で解説を飛ばさないよう、判定直後は少し無効化
-  cta.disabled = true;
-  setTimeout(updateCta, 700);
+  cta.disabled = true; setTimeout(updateCta, 700);
 }
-
 function nextQ(){
   qi++;
-  if(qi >= queue.length){
-    $("#d-score").textContent = sessionCorrect + " / " + sessionDone;
-    $("#d-note").textContent = retried.size
-      ? "間違えた " + retried.size + " 問は後ろに回して再出題しました。明日もう一度出すのが本実装の予定です。"
-      : "全問一発正解。この調子です。";
-    show("done");
-    return;
-  }
+  if(qi >= queue.length){ clearSession(); renderResult(); show("result"); return; }
+  saveSession();
   renderQ();
 }
-
-/* ================= ボックス図ドリル ================= */
-let bi = 0, bDone = false;
-$("#btn-box").addEventListener("click", () => {
-  bi = 0; bDone = false;
-  document.querySelectorAll(".blank").forEach(b => { b.textContent = "？"; b.className = "blank"; });
-  $("#b-fb").className = "fb";
-  $("#b-hint").className = "hint";
-  $("#b-step").style.display = "";   // 完答後の再挑戦で設問カードを戻す
-  show("box"); renderB();
+$("#q-report").addEventListener("click", () => {
+  const p = curP(); const txt = "[ボキトレ 問題報告] " + p.id + " " + p.topic + "\n" + p.text;
+  const done = () => toast("問題ID " + p.id + " をコピーしました。報告フォームは本実装で用意します");
+  if(navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(txt).then(done, () => toast("ID: " + p.id));
+  else toast("ID: " + p.id);
 });
+function renderResult(){
+  const n = sessionLog.length, ok = sessionLog.filter(x => x.ok).length;
+  $("#r-score").textContent = ok + " / " + n;
+  $("#r-note").textContent = n && ok === n ? "全問一発正解。次の復習日まで寝かせましょう。" : "一発で正解できなかった問題は、明日の復習に自動で入ります。";
+  const tm = {};
+  for(const x of sessionLog){ const p = PROBLEMS.find(q => q.id === x.id); const k = p.topic; if(!tm[k]) tm[k] = [0,0]; tm[k][1]++; if(x.ok) tm[k][0]++; }
+  $("#r-topics").innerHTML = Object.keys(tm).map(k => '<tr><td>' + esc(k) + '</td><td class="num">' + tm[k][0] + ' / ' + tm[k][1] + '</td></tr>').join("");
+  const wr = sessionLog.filter(x => !x.ok);
+  $("#r-wrongsec").style.display = wr.length ? "" : "none";
+  $("#r-wrongs").innerHTML = wr.map(x => { const p = PROBLEMS.find(q => q.id === x.id); return '<div class="w"><b>' + esc(p.topic) + '</b>' + esc(p.text.slice(0, 42)) + '…</div>'; }).join("");
+  $("#r-retry").onclick = () => startSession("retry", {ids: wr.map(x => x.id)});
+  $("#r-share").onclick = () => {
+    const tops = Object.keys(tm).slice(0, 3).join("・");
+    const text = "電車で片手、鉛筆なしで簿記2級。\nきょう " + ok + "/" + n + " 正解（" + tops + "）／連続 " + streakDays() + " 日\n#簿記2級 #ボキトレ";
+    const url = APP_URL;
+    if(navigator.share){ navigator.share({text, url}).catch(() => {}); return; }
+    const full = text + "\n" + url;
+    if(navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(full).then(() => toast("シェア用の文をコピーしました"), () => toast("コピーできませんでした"));
+    else toast("コピーできませんでした");
+  };
+}
 
+/* ================= guided drills ================= */
+let drill = null, bi = 0, bDone = false;
+function startDrill(id){
+  drill = DRILLS.find(d => d.id === id); bi = 0; bDone = false;
+  $("#b-cat").textContent = drill.tag + " · " + drill.title;
+  $("#b-text").innerHTML = drill.text;
+  $("#b-boxes").innerHTML = drill.boxes;
+  $("#b-fb").className = "fb"; $("#b-hint").className = "hint"; $("#b-step").style.display = "";
+  show("drill"); renderB();
+}
 function renderB(){
-  const s = BOX_STEPS[bi];
-  $("#b-prog").style.width = (bi / BOX_STEPS.length * 100) + "%";
-  $("#b-count").textContent = (bi+1) + "/" + BOX_STEPS.length;
-  $("#b-step-n").textContent = s.n;
-  $("#b-step-q").textContent = s.q;
-  $("#b-hint").className = "hint";
-  $("#b-hint").textContent = "ヒント：" + s.hint;
-  document.querySelectorAll(".blank").forEach(b => b.classList.remove("active"));
-  const target = document.querySelector('.blank[data-blank="' + s.key + '"]');
+  const s = drill.steps[bi];
+  $("#b-prog").style.width = (bi / drill.steps.length * 100) + "%";
+  $("#b-count").textContent = (bi+1) + "/" + drill.steps.length;
+  $("#b-step-n").textContent = s.n; $("#b-step-q").textContent = s.q;
+  $("#b-hint").className = "hint"; $("#b-hint").textContent = "ヒント：" + s.hint;
+  document.querySelectorAll("#b-boxes .blank").forEach(b => b.classList.remove("active"));
+  const target = document.querySelector('#b-boxes .blank[data-blank="' + s.key + '"]');
   if(target) target.classList.add("active");
   updateCta();
 }
-
-function answerB(){
-  const s = BOX_STEPS[bi];
-  askNumber(s.n + "（" + s.unit + "）", v => {
-    if(v === s.a){
-      record(true);
-      const target = document.querySelector('.blank[data-blank="' + s.key + '"]');
-      if(target){
-        target.textContent = s.unit === "円" ? yen(s.a) : s.a.toLocaleString("ja-JP");
-        target.className = "blank done num";
-      }
-      bi++;
-      if(bi >= BOX_STEPS.length){
-        bDone = true;
-        $("#b-prog").style.width = "100%";
-        const fb = $("#b-fb");
-        fb.className = "fb on good";
-        $("#b-fb-title").textContent = "完答！";
-        $("#b-fb-body").innerHTML = '<div class="ans num">月末仕掛品原価 ¥288,000<br>完成品総合原価 ¥1,632,000（単位原価 @¥1,020）</div><p class="expl">紙の下書きでやっていた計算が、ボックス図をそのまま埋める形で完結しました。これが「電車モード」の狙いです。</p>';
-        $("#b-step").style.display = "none";
-        updateCta();
-      } else {
-        renderB();
-      }
-    } else {
-      record(false);
-      const card = $("#b-step");
-      card.classList.remove("shake"); void card.offsetWidth; card.classList.add("shake");
-      $("#b-hint").className = "hint on";
-      updateCta();
-    }
-  });
+function fmtAns(s){ if(s.type === "choice") return s.a; if(s.unit === "円") return yen(s.a); if(s.unit === "%") return s.a + "%"; return s.a.toLocaleString("ja-JP"); }
+function stepResult(s, v){
+  const ok = v === s.a;
+  if(ok){
+    const target = document.querySelector('#b-boxes .blank[data-blank="' + s.key + '"]');
+    if(target){ target.textContent = fmtAns(s); target.className = "blank done num"; }
+    bi++;
+    if(bi >= drill.steps.length){
+      bDone = true; $("#b-prog").style.width = "100%";
+      drillDone[drill.id] = nn(drillDone[drill.id]) + 1; store.set("drills", drillDone);
+      const t = todayStr(); days[t] = nn(days[t]) + 1; store.set("days", days);
+      const fb = $("#b-fb"); fb.className = "fb on good";
+      $("#b-fb-title").textContent = "完答！"; $("#b-fb-body").innerHTML = drill.final;
+      $("#b-step").style.display = "none"; updateCta();
+    } else renderB();
+  } else {
+    const card = $("#b-step"); card.classList.remove("shake"); void card.offsetWidth; card.classList.add("shake");
+    $("#b-hint").className = "hint on"; updateCta();
+  }
 }
+function answerB(){
+  const s = drill.steps[bi];
+  if(s.type === "choice") pickChip(s.n + "：どちら？", s.options, v => stepResult(s, v));
+  else askNumber(s.n + "（" + s.unit + "）", v => stepResult(s, v), {allowZero:true});
+}
+// 空欄そのものをタップしても入力できる（いま埋める欄だけ反応）
+$("#b-boxes").addEventListener("click", e => {
+  const b = e.target.closest(".blank");
+  if(b && b.classList.contains("active") && !bDone) answerB();
+});
 
-/* ================= CTA button ================= */
+/* ================= CTA ================= */
 const cta = $("#cta");
 function updateCta(){
   if(mode === "quiz"){
     if(answered){ cta.textContent = qi+1 >= queue.length ? "結果を見る" : "次の問題へ"; cta.disabled = false; }
-    else {
-      const dt = entry.debit.reduce((s,l)=>s+l[1],0), ct = entry.credit.reduce((s,l)=>s+l[1],0);
-      cta.textContent = "判定する";
-      cta.disabled = !(entry.debit.length && entry.credit.length && dt === ct);
-    }
-  } else if(mode === "box"){
-    if(bDone){ cta.textContent = "ホームへ戻る"; cta.disabled = false; }
-    else { cta.textContent = "この欄に入力する"; cta.disabled = false; }
-  } else if(mode === "done"){
-    cta.textContent = "もう一度解く"; cta.disabled = false;
-  } else {
-    cta.textContent = "ドリルを選んでスタート"; cta.disabled = true;
-  }
+    else { const dt = entry.debit.reduce((s,l)=>s+l[1],0), ct = entry.credit.reduce((s,l)=>s+l[1],0); cta.textContent = "判定する"; cta.disabled = !(entry.debit.length && entry.credit.length && dt === ct); }
+  } else if(mode === "drill"){ cta.textContent = bDone ? "ホームへ戻る" : "この欄に入力する"; cta.disabled = false; }
+  else if(mode === "result"){ cta.textContent = "ホームへ戻る"; cta.disabled = false; }
+  else { cta.textContent = "きょうの学習を始める"; cta.disabled = false; }
 }
 cta.addEventListener("click", () => {
   if(mode === "quiz"){ answered ? nextQ() : checkQ(); }
-  else if(mode === "box"){ bDone ? show("home") : answerB(); }
-  else if(mode === "done"){ $("#btn-shiwake").click(); }
+  else if(mode === "drill"){ bDone ? show("home") : answerB(); }
+  else if(mode === "result"){ show("home"); }
+  else { startSession("today"); }
 });
 
-renderStats();
+applyTheme();
+renderHome();
 updateCta();
 </script>
+
+</body>
+</html>
