@@ -1,0 +1,792 @@
+<meta charset="utf-8">
+<title>ボキトレ</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@500;700&family=Zen+Kaku+Gothic+New:wght@400;500;700&family=IBM+Plex+Mono:wght@500;600&display=swap">
+<style>
+  :root{
+    --bg:#F6F7F4;
+    --surface:#FFFFFF;
+    --surface2:#EEF1EB;
+    --ink:#20302A;
+    --ink-soft:#5C6B63;
+    --line:#D8DED6;
+    --accent:#0E7A5F;
+    --accent-ink:#FFFFFF;
+    --accent-soft:#DCEEE7;
+    --debit:#2E5AAC;
+    --credit:#A8542F;
+    --ok-bg:#E3F2E9; --ok-ink:#1B6B45; --ok-line:#9CCDB2;
+    --ng-bg:#FBE9E7; --ng-ink:#B03A2E; --ng-line:#E5B0A8;
+    --shadow:0 6px 24px rgba(32,48,42,.10);
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --bg:#131916;
+      --surface:#1C2420;
+      --surface2:#232D28;
+      --ink:#E4EAE6;
+      --ink-soft:#96A59D;
+      --line:#33403A;
+      --accent:#3FBF97;
+      --accent-ink:#0D1512;
+      --accent-soft:#1E3A32;
+      --debit:#7FA7E8;
+      --credit:#E39A72;
+      --ok-bg:#1D3327; --ok-ink:#7FD6A4; --ok-line:#2F5C43;
+      --ng-bg:#3A211E; --ng-ink:#F0968B; --ng-line:#6B342E;
+      --shadow:0 6px 24px rgba(0,0,0,.4);
+    }
+  }
+  :root[data-theme="dark"]{
+    --bg:#131916;
+    --surface:#1C2420;
+    --surface2:#232D28;
+    --ink:#E4EAE6;
+    --ink-soft:#96A59D;
+    --line:#33403A;
+    --accent:#3FBF97;
+    --accent-ink:#0D1512;
+    --accent-soft:#1E3A32;
+    --debit:#7FA7E8;
+    --credit:#E39A72;
+    --ok-bg:#1D3327; --ok-ink:#7FD6A4; --ok-line:#2F5C43;
+    --ng-bg:#3A211E; --ng-ink:#F0968B; --ng-line:#6B342E;
+    --shadow:0 6px 24px rgba(0,0,0,.4);
+  }
+  *{box-sizing:border-box; -webkit-tap-highlight-color:transparent}
+  html,body{margin:0; padding:0}
+  body{
+    background:var(--bg); color:var(--ink);
+    font-family:"Zen Kaku Gothic New", "Hiragino Kaku Gothic ProN", "Yu Gothic", sans-serif;
+    font-size:15px; line-height:1.7;
+  }
+  .num{font-family:"IBM Plex Mono", ui-monospace, monospace; font-variant-numeric:tabular-nums}
+  h1,h2,h3,.disp{font-family:"Zen Maru Gothic","Zen Kaku Gothic New",sans-serif; text-wrap:balance}
+  button{font-family:inherit; font-size:inherit; color:inherit; background:none; border:none; padding:0; cursor:pointer}
+  button:focus-visible, [tabindex]:focus-visible{outline:2px solid var(--accent); outline-offset:2px}
+
+  #app{max-width:480px; margin:0 auto; min-height:100dvh; display:flex; flex-direction:column; padding:0 16px calc(96px + env(safe-area-inset-bottom))}
+  .screen{display:none; flex-direction:column; flex:1}
+  .screen.on{display:flex}
+
+  /* ---------- home ---------- */
+  .brand{padding:28px 4px 6px}
+  .brand .eyebrow{font-size:11px; letter-spacing:.18em; color:var(--accent); font-weight:700}
+  .brand h1{margin:2px 0 0; font-size:30px; font-weight:700}
+  .brand p{margin:6px 0 0; color:var(--ink-soft); font-size:13px}
+  .statrow{display:flex; gap:10px; margin:18px 0 6px}
+  .stat{flex:1; background:var(--surface); border:1px solid var(--line); border-radius:14px; padding:10px 14px}
+  .stat .v{font-size:22px; font-weight:600}
+  .stat .k{font-size:11px; color:var(--ink-soft); letter-spacing:.08em}
+  .drills{display:flex; flex-direction:column; gap:12px; margin-top:14px}
+  .drill{background:var(--surface); border:1px solid var(--line); border-radius:18px; padding:18px; text-align:left; box-shadow:var(--shadow); display:block; width:100%}
+  .drill:active{transform:scale(.985)}
+  .drill .tag{display:inline-block; font-size:11px; font-weight:700; letter-spacing:.1em; padding:2px 10px; border-radius:99px; background:var(--accent-soft); color:var(--accent)}
+  .drill h2{margin:8px 0 4px; font-size:19px}
+  .drill p{margin:0; font-size:13px; color:var(--ink-soft)}
+  .foot{margin-top:auto; padding:26px 4px 12px; font-size:11.5px; color:var(--ink-soft)}
+
+  /* ---------- drill header ---------- */
+  .dhead{display:flex; align-items:center; gap:12px; padding:14px 0 10px; position:sticky; top:0; background:var(--bg); z-index:5}
+  .backbtn{width:40px; height:40px; border-radius:12px; background:var(--surface); border:1px solid var(--line); font-size:18px; flex:none; display:grid; place-items:center}
+  .pbar{flex:1; height:8px; border-radius:99px; background:var(--surface2); overflow:hidden}
+  .pbar > div{height:100%; background:var(--accent); border-radius:99px; transition:width .3s}
+  .pcount{font-size:12px; color:var(--ink-soft); flex:none}
+
+  /* ---------- problem card ---------- */
+  .qcard{background:var(--surface); border:1px solid var(--line); border-radius:16px; padding:16px 18px; box-shadow:var(--shadow)}
+  .qcard .cat{font-size:11px; font-weight:700; letter-spacing:.12em; color:var(--accent)}
+  .qcard .qt{margin:6px 0 0; font-size:15px}
+
+  /* ---------- journal entry area ---------- */
+  .je{display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:14px}
+  .side h3{margin:0 0 6px; font-size:12px; letter-spacing:.14em; font-weight:700}
+  .side.d h3{color:var(--debit)} .side.c h3{color:var(--credit)}
+  .lines{display:flex; flex-direction:column; gap:6px}
+  .jline{background:var(--surface); border:1px solid var(--line); border-radius:12px; padding:8px 10px; text-align:left; width:100%}
+  .jline .a{font-size:13px; font-weight:500; display:block}
+  .jline .m{font-size:15px; display:block; text-align:right}
+  .jline .del{font-size:10px; color:var(--ink-soft)}
+  .addline{border:1.5px dashed var(--line); border-radius:12px; padding:10px; width:100%; color:var(--ink-soft); font-size:13px; min-height:44px}
+  .baltag{grid-column:1/-1; text-align:center; font-size:12px; color:var(--ink-soft)}
+  .baltag.ok{color:var(--ok-ink); font-weight:700}
+
+  /* ---------- feedback ---------- */
+  .fb{margin-top:14px; border-radius:16px; padding:14px 16px; display:none}
+  .fb.on{display:block}
+  .fb.good{background:var(--ok-bg); border:1px solid var(--ok-line); color:var(--ok-ink)}
+  .fb.bad{background:var(--ng-bg); border:1px solid var(--ng-line); color:var(--ng-ink)}
+  .fb h3{margin:0 0 6px; font-size:16px}
+  .fb .ans{background:var(--surface); color:var(--ink); border-radius:10px; padding:8px 12px; margin:8px 0; font-size:13px}
+  .fb .ansrow{display:flex; justify-content:space-between; gap:8px}
+  .fb .expl{font-size:13px; color:var(--ink); opacity:.9; margin:6px 0 0}
+
+  /* ---------- bottom action bar ---------- */
+  .actionbar{position:fixed; left:0; right:0; bottom:0; z-index:20; padding:10px 16px calc(12px + env(safe-area-inset-bottom)); background:linear-gradient(to top, var(--bg) 70%, transparent); pointer-events:none}
+  .actionbar .inner{max-width:480px; margin:0 auto; display:flex; gap:10px; pointer-events:auto}
+  .fab{width:52px; height:52px; border-radius:16px; background:var(--surface); border:1px solid var(--line); font-size:20px; flex:none; box-shadow:var(--shadow); display:grid; place-items:center}
+  .cta{flex:1; height:52px; border-radius:16px; background:var(--accent); color:var(--accent-ink); font-weight:700; font-size:16px; letter-spacing:.06em; box-shadow:var(--shadow)}
+  .cta:disabled{opacity:.35}
+
+  /* ---------- bottom sheets ---------- */
+  .scrim{position:fixed; inset:0; background:rgba(10,15,12,.45); opacity:0; pointer-events:none; transition:opacity .2s; z-index:30}
+  .scrim.on{opacity:1; pointer-events:auto}
+  .sheet{position:fixed; left:0; right:0; bottom:0; z-index:31; background:var(--surface); border-radius:20px 20px 0 0; box-shadow:0 -8px 40px rgba(0,0,0,.25); transform:translateY(105%); transition:transform .22s ease-out; padding:14px 16px calc(16px + env(safe-area-inset-bottom)); max-height:85dvh; overflow-y:auto}
+  .sheet.on{transform:translateY(0)}
+  .sheet .inner{max-width:480px; margin:0 auto}
+  .sheet h3{margin:0 0 10px; font-size:14px}
+  .grabber{width:36px; height:4px; border-radius:99px; background:var(--line); margin:0 auto 10px}
+  @media (prefers-reduced-motion: reduce){ .sheet{transition:none} .scrim{transition:none} }
+
+  .chips{display:flex; flex-wrap:wrap; gap:8px}
+  .chip{background:var(--surface2); border:1px solid var(--line); border-radius:99px; padding:9px 14px; font-size:14px; min-height:44px}
+  .chip:active{background:var(--accent-soft); border-color:var(--accent)}
+
+  /* ---------- numpad ---------- */
+  .npdisp{background:var(--surface2); border:1px solid var(--line); border-radius:12px; padding:8px 14px; text-align:right; margin-bottom:10px}
+  .npdisp .ctx{font-size:11px; color:var(--ink-soft); text-align:left}
+  .npdisp .val{font-size:26px; font-weight:600; min-height:34px}
+  .npgrid{display:grid; grid-template-columns:repeat(4,1fr); gap:8px}
+  .npk{height:52px; border-radius:12px; background:var(--surface2); border:1px solid var(--line); font-size:19px; font-weight:500}
+  .npk:active{background:var(--accent-soft)}
+  .npk.op{background:var(--surface); color:var(--accent); font-weight:700}
+  .npk.okk{background:var(--accent); color:var(--accent-ink); font-weight:700; grid-row:span 2; height:auto}
+  .npdelbtn{width:100%; margin-top:10px; height:44px; border-radius:12px; color:var(--ng-ink); background:var(--ng-bg); border:1px solid var(--ng-line); font-weight:700; font-size:14px; display:none}
+  .npdelbtn.on{display:block}
+
+  /* ---------- box diagram ---------- */
+  .box{background:var(--surface); border:1px solid var(--line); border-radius:16px; margin-top:14px; overflow:hidden}
+  .box .bt{padding:8px 14px; font-size:12px; font-weight:700; letter-spacing:.1em; background:var(--surface2); border-bottom:1px solid var(--line)}
+  .bgrid{display:grid; grid-template-columns:1fr 1fr}
+  .bcell{padding:10px 12px; border-bottom:1px solid var(--line); min-height:64px}
+  .bcell:nth-child(odd){border-right:1px dashed var(--line)}
+  .bgrid .bcell:nth-last-child(-n+2){border-bottom:none}
+  .bcell .lbl{font-size:11px; color:var(--ink-soft)}
+  .bcell .qty{font-size:12px; color:var(--ink-soft)}
+  .bcell .amt{font-size:15px; font-weight:600}
+  .blank{display:inline-block; min-width:88px; border-bottom:2px solid var(--accent); text-align:right; padding:1px 4px; border-radius:4px 4px 0 0}
+  .blank.active{background:var(--accent-soft)}
+  .blank.done{border-color:var(--ok-line); color:var(--ok-ink)}
+  .stepcard{background:var(--surface); border:1px solid var(--line); border-radius:16px; padding:14px 16px; margin-top:12px; box-shadow:var(--shadow)}
+  .stepcard .sn{font-size:11px; font-weight:700; letter-spacing:.12em; color:var(--accent)}
+  .stepcard p{margin:4px 0 0; font-size:14px}
+  .hint{margin-top:8px; font-size:12.5px; color:var(--ink-soft); background:var(--surface2); border-radius:10px; padding:8px 12px; display:none}
+  .hint.on{display:block}
+  .shake{animation:shk .3s}
+  @keyframes shk{0%,100%{transform:translateX(0)}25%{transform:translateX(-5px)}75%{transform:translateX(5px)}}
+  @media (prefers-reduced-motion: reduce){ .shake{animation:none} }
+
+  /* ---------- calc & memo drawer ---------- */
+  .memo{width:100%; min-height:72px; background:var(--surface2); border:1px solid var(--line); border-radius:12px; color:var(--ink); font-family:inherit; font-size:14px; padding:10px 12px; resize:vertical; margin-bottom:10px}
+
+  /* ---------- done screen ---------- */
+  .donecard{background:var(--surface); border:1px solid var(--line); border-radius:20px; padding:28px 22px; text-align:center; margin-top:40px; box-shadow:var(--shadow)}
+  .donecard .big{font-size:44px; font-weight:700}
+  .donecard p{color:var(--ink-soft); font-size:13px}
+</style>
+
+<div id="app">
+
+  <!-- ============ HOME ============ -->
+  <section class="screen on" id="scr-home">
+    <div class="brand">
+      <div class="eyebrow">PROTOTYPE — 電車モード</div>
+      <h1>ボキトレ<span style="font-size:14px; color:var(--ink-soft); font-weight:500">（仮称）</span></h1>
+      <p>鉛筆も紙も出さずに、片手で簿記2級。</p>
+    </div>
+    <div class="statrow">
+      <div class="stat"><div class="v num" id="st-done">0</div><div class="k">答えた回数</div></div>
+      <div class="stat"><div class="v num" id="st-rate">–</div><div class="k">正答率</div></div>
+      <div class="stat"><div class="v num" id="st-streak">0</div><div class="k">連続正解</div></div>
+    </div>
+    <div class="drills">
+      <button class="drill" id="btn-shiwake">
+        <span class="tag">商業 ＋ 工業</span>
+        <h2>仕訳ドリル</h2>
+        <p>10問 · 科目タップ＋テンキーで入力。間違えた問題は後ろに回ってもう一度出ます。</p>
+      </button>
+      <button class="drill" id="btn-box">
+        <span class="tag">工業簿記</span>
+        <h2>ボックス図で解く 総合原価計算</h2>
+        <p>下書き用紙の代わりに、画面のボックス図を順番に埋めて完成品原価まで出します。</p>
+      </button>
+    </div>
+    <div class="foot">
+      プロトタイプ範囲：仕訳10問（商業5・工業5）＋総合原価計算1問。<br>
+      右下の 🖩 でいつでも電卓とメモを開けます。問題はすべてオリジナルです。
+    </div>
+  </section>
+
+  <!-- ============ 仕訳ドリル ============ -->
+  <section class="screen" id="scr-quiz">
+    <div class="dhead">
+      <button class="backbtn" data-home aria-label="ホームへ戻る">←</button>
+      <div class="pbar"><div id="q-prog" style="width:0%"></div></div>
+      <div class="pcount num" id="q-count"></div>
+    </div>
+    <div class="qcard">
+      <div class="cat" id="q-cat"></div>
+      <p class="qt" id="q-text"></p>
+    </div>
+    <div class="je">
+      <div class="side d">
+        <h3>借方</h3>
+        <div class="lines" id="q-dlines"></div>
+        <button class="addline" data-side="debit" style="margin-top:6px">＋ 科目を選ぶ</button>
+      </div>
+      <div class="side c">
+        <h3>貸方</h3>
+        <div class="lines" id="q-clines"></div>
+        <button class="addline" data-side="credit" style="margin-top:6px">＋ 科目を選ぶ</button>
+      </div>
+      <div class="baltag" id="q-bal">借方 0 ／ 貸方 0</div>
+    </div>
+    <div class="fb" id="q-fb">
+      <h3 id="q-fb-title"></h3>
+      <div id="q-fb-ans"></div>
+      <p class="expl" id="q-fb-expl"></p>
+    </div>
+  </section>
+
+  <!-- ============ 仕訳ドリル 完了 ============ -->
+  <section class="screen" id="scr-done">
+    <div class="dhead">
+      <button class="backbtn" data-home aria-label="ホームへ戻る">←</button>
+    </div>
+    <div class="donecard">
+      <div class="disp" style="font-size:15px; color:var(--accent); font-weight:700; letter-spacing:.12em">おつかれさま</div>
+      <div class="big num" id="d-score"></div>
+      <p id="d-note"></p>
+    </div>
+  </section>
+
+  <!-- ============ ボックス図ドリル ============ -->
+  <section class="screen" id="scr-box">
+    <div class="dhead">
+      <button class="backbtn" data-home aria-label="ホームへ戻る">←</button>
+      <div class="pbar"><div id="b-prog" style="width:0%"></div></div>
+      <div class="pcount num" id="b-count"></div>
+    </div>
+    <div class="qcard">
+      <div class="cat">工業簿記 · 単純総合原価計算（平均法）</div>
+      <p class="qt" style="font-size:14px">
+        当社は単一製品を大量生産している。次の資料にもとづき、<b>平均法</b>によって月末仕掛品原価と完成品総合原価を求めなさい。原料はすべて<b>工程の始点</b>で投入している。<br><br>
+        月初仕掛品：200個（加工進捗度 50%）　原料費 ¥84,000　加工費 ¥90,000<br>
+        当月投入：1,800個　原料費 ¥756,000　加工費 ¥990,000<br>
+        当月完成品：1,600個　月末仕掛品：400個（加工進捗度 50%）
+      </p>
+    </div>
+
+    <div class="box">
+      <div class="bt">原料費のボックス（数量：個）</div>
+      <div class="bgrid">
+        <div class="bcell"><div class="lbl">月初仕掛品</div><div class="qty num">200個</div><div class="amt num">¥84,000</div></div>
+        <div class="bcell"><div class="lbl">完成品</div><div class="qty num">1,600個</div><div class="amt num"><span class="blank" data-blank="matDone">？</span></div></div>
+        <div class="bcell"><div class="lbl">当月投入</div><div class="qty num">1,800個</div><div class="amt num">¥756,000</div></div>
+        <div class="bcell"><div class="lbl">月末仕掛品</div><div class="qty num">400個</div><div class="amt num"><span class="blank" data-blank="matEnd">？</span></div></div>
+      </div>
+    </div>
+    <div class="box">
+      <div class="bt">加工費のボックス（数量：完成品換算量）</div>
+      <div class="bgrid">
+        <div class="bcell"><div class="lbl">月初仕掛品</div><div class="qty num">200個×50%＝100個</div><div class="amt num">¥90,000</div></div>
+        <div class="bcell"><div class="lbl">完成品</div><div class="qty num">1,600個</div><div class="amt num"><span class="blank" data-blank="convDone">？</span></div></div>
+        <div class="bcell"><div class="lbl">当月投入</div><div class="qty num">（差引）</div><div class="amt num">¥990,000</div></div>
+        <div class="bcell"><div class="lbl">月末仕掛品</div><div class="qty num"><span class="blank" data-blank="convQty">？</span> 個</div><div class="amt num"><span class="blank" data-blank="convEnd">？</span></div></div>
+      </div>
+    </div>
+
+    <div class="stepcard" id="b-step">
+      <div class="sn" id="b-step-n"></div>
+      <p id="b-step-q"></p>
+      <div class="hint" id="b-hint"></div>
+    </div>
+    <div class="fb" id="b-fb">
+      <h3 id="b-fb-title"></h3>
+      <div id="b-fb-body"></div>
+    </div>
+  </section>
+
+</div>
+
+<!-- ============ bottom action bar ============ -->
+<div class="actionbar">
+  <div class="inner">
+    <button class="fab" id="fab-calc" aria-label="電卓とメモを開く">🖩</button>
+    <button class="cta" id="cta" disabled>判定する</button>
+  </div>
+</div>
+
+<!-- ============ sheets ============ -->
+<div class="scrim" id="scrim"></div>
+
+<div class="sheet" id="sheet-acct" role="dialog" aria-label="勘定科目を選ぶ">
+  <div class="inner">
+    <div class="grabber"></div>
+    <h3 id="acct-title">科目を選ぶ</h3>
+    <div class="chips" id="acct-chips"></div>
+  </div>
+</div>
+
+<div class="sheet" id="sheet-num" role="dialog" aria-label="金額を入力">
+  <div class="inner">
+    <div class="grabber"></div>
+    <div class="npdisp">
+      <div class="ctx" id="np-ctx"></div>
+      <div class="val num" id="np-val">0</div>
+    </div>
+    <div class="npgrid">
+      <button class="npk num">7</button><button class="npk num">8</button><button class="npk num">9</button><button class="npk op" data-op="÷">÷</button>
+      <button class="npk num">4</button><button class="npk num">5</button><button class="npk num">6</button><button class="npk op" data-op="×">×</button>
+      <button class="npk num">1</button><button class="npk num">2</button><button class="npk num">3</button><button class="npk op" data-op="−">−</button>
+      <button class="npk num">0</button><button class="npk num" data-k="00">00</button><button class="npk num" data-k="000">000</button><button class="npk op" data-op="＋">＋</button>
+      <button class="npk op" data-k="C">C</button><button class="npk op" data-k="⌫">⌫</button><button class="npk op" data-op="＝">＝</button><button class="npk okk" data-k="OK">OK</button>
+    </div>
+    <button class="npdelbtn" id="np-del">この行を削除</button>
+  </div>
+</div>
+
+<div class="sheet" id="sheet-calc" role="dialog" aria-label="電卓とメモ">
+  <div class="inner">
+    <div class="grabber"></div>
+    <h3>メモ & 電卓</h3>
+    <textarea class="memo" id="memo" placeholder="下書きメモ（この端末にだけ保存されます）"></textarea>
+    <div class="npdisp"><div class="val num" id="cp-val">0</div></div>
+    <div class="npgrid">
+      <button class="npk num">7</button><button class="npk num">8</button><button class="npk num">9</button><button class="npk op" data-op="÷">÷</button>
+      <button class="npk num">4</button><button class="npk num">5</button><button class="npk num">6</button><button class="npk op" data-op="×">×</button>
+      <button class="npk num">1</button><button class="npk num">2</button><button class="npk num">3</button><button class="npk op" data-op="−">−</button>
+      <button class="npk num">0</button><button class="npk num" data-k="00">00</button><button class="npk num" data-k="000">000</button><button class="npk op" data-op="＋">＋</button>
+      <button class="npk op" data-k="C">C</button><button class="npk op" data-k="⌫">⌫</button><button class="npk op" data-op="＝">＝</button><button class="npk okk" data-k="↵メモ">↵メモ</button>
+    </div>
+  </div>
+</div>
+
+<script>
+"use strict";
+/* ================= data ================= */
+const PROBLEMS = [
+  {cat:"商業", text:"商品 ¥300,000 をクレジット払いの条件で販売した。信販会社へのクレジット手数料（販売代金の2%）は販売時に計上する。",
+   cands:["クレジット売掛金","売掛金","支払手数料","売上","受取手数料","現金"],
+   debit:[["クレジット売掛金",294000],["支払手数料",6000]], credit:[["売上",300000]],
+   expl:"手数料 300,000×2%＝6,000 を差し引いた残額がクレジット売掛金。売上は総額の300,000で計上します。"},
+  {cat:"商業", text:"決算につき、備品（取得原価 ¥500,000、期首減価償却累計額 ¥200,000）について 200%定率法（耐用年数5年）により減価償却を行う。記帳は間接法による。",
+   cands:["減価償却費","備品減価償却累計額","備品","固定資産除却損","貯蔵品","未払金"],
+   debit:[["減価償却費",120000]], credit:[["備品減価償却累計額",120000]],
+   expl:"償却率＝1/5×200%＝0.4。期首帳簿価額（500,000−200,000）＝300,000 に 0.4 を掛けて 120,000。"},
+  {cat:"商業", text:"売買目的で上場株式100株を1株 ¥1,200 で購入し、購入手数料 ¥3,000 とともに代金は後日証券会社へ支払うこととした。",
+   cands:["売買目的有価証券","満期保有目的債券","未払金","買掛金","支払手数料","現金"],
+   debit:[["売買目的有価証券",123000]], credit:[["未払金",123000]],
+   expl:"1,200×100＋3,000＝123,000。付随費用（購入手数料）は取得原価に含めます。商品以外の未払いは買掛金でなく未払金。"},
+  {cat:"商業", text:"従業員に賞与 ¥1,200,000 を支給し、源泉所得税 ¥100,000 を差し引いた残額を当座預金口座から振り込んだ。なお、前期決算において賞与引当金 ¥800,000 を設定している。",
+   cands:["賞与引当金","賞与","所得税預り金","当座預金","現金","法定福利費"],
+   debit:[["賞与引当金",800000],["賞与",400000]], credit:[["所得税預り金",100000],["当座預金",1100000]],
+   expl:"引当金 800,000 を取り崩し、超える 400,000 だけ当期の費用（賞与）。振込額は 1,200,000−100,000＝1,100,000。"},
+  {cat:"商業", text:"×1年4月1日、備品についてリース契約（ファイナンス・リース取引に該当、リース料年額 ¥60,000・リース期間5年）を締結し、リース取引を開始した。利子込み法により処理する。",
+   cands:["リース資産","リース債務","支払リース料","備品","支払利息","未払金"],
+   debit:[["リース資産",300000]], credit:[["リース債務",300000]],
+   expl:"利子込み法ではリース料総額 60,000×5年＝300,000 をそのまま資産・債務に計上します。支払利息は使いません。"},
+  {cat:"工業", text:"材料500kgを1kgあたり ¥1,000 で掛けで購入し、引取運賃 ¥20,000 は現金で支払った。",
+   cands:["材料","買掛金","現金","仕掛品","材料副費","製造間接費"],
+   debit:[["材料",520000]], credit:[["買掛金",500000],["現金",20000]],
+   expl:"引取運賃などの材料副費は材料の購入原価に含めます。500×1,000＋20,000＝520,000。"},
+  {cat:"工業", text:"直接工の作業時間報告書によれば、当月の直接作業時間は400時間、間接作業時間は100時間であった。予定賃率は1時間あたり ¥1,000 である。賃金の消費額を計上する。",
+   cands:["仕掛品","製造間接費","賃金","製品","労務費差異","現金"],
+   debit:[["仕掛品",400000],["製造間接費",100000]], credit:[["賃金",500000]],
+   expl:"直接作業分は仕掛品へ、間接作業分は製造間接費へ。直接工でも間接作業の時間は間接労務費です。"},
+  {cat:"工業", text:"製造間接費を直接作業時間を配賦基準として予定配賦する。予定配賦率は1時間あたり ¥800、当月の実際直接作業時間は450時間であった。",
+   cands:["仕掛品","製造間接費","製品","製造間接費配賦差異","賃金","材料"],
+   debit:[["仕掛品",360000]], credit:[["製造間接費",360000]],
+   expl:"予定配賦額＝800×450時間＝360,000。テンキーの×キーでそのまま計算できます。"},
+  {cat:"工業", text:"当月の製造間接費の実際発生額は ¥375,000 であった。予定配賦額 ¥360,000 との差額を製造間接費配賦差異勘定へ振り替える。",
+   cands:["製造間接費配賦差異","製造間接費","仕掛品","売上原価","原価差異","製品"],
+   debit:[["製造間接費配賦差異",15000]], credit:[["製造間接費",15000]],
+   expl:"実際 375,000 ＞ 予定 360,000 なので 15,000 の不利差異（借方差異）。製造間接費勘定から差異勘定へ振り替えます。"},
+  {cat:"工業", text:"当月に完成した製品の原価は ¥1,250,000 であった。完成品原価を振り替える。",
+   cands:["製品","仕掛品","売上原価","製造間接費","売上","材料"],
+   debit:[["製品",1250000]], credit:[["仕掛品",1250000]],
+   expl:"完成した分だけ仕掛品勘定から製品勘定へ。販売したときにはじめて売上原価に振り替えます。"},
+];
+
+const BOX_STEPS = [
+  {key:"convQty", n:"STEP 1", q:"月末仕掛品の完成品換算量は？（400個 × 加工進捗度50%）", a:200, unit:"個",
+   hint:"加工費は進捗度に応じて発生するので、400個×50%＝200個ぶんとして扱います。"},
+  {key:"matEnd", n:"STEP 2", q:"原料費の月末仕掛品原価は？　平均法なので（月初84,000＋当月756,000）÷（完成1,600個＋月末400個）で単価を出し、月末400個分を計算。", a:168000, unit:"円",
+   hint:"840,000÷2,000個＝@420。420×400個＝168,000。テンキーで 84000＋756000÷2000×400 と左から順に押せばOK。"},
+  {key:"matDone", n:"STEP 3", q:"原料費の完成品分は？（ボックスの貸借差引で出すのが速い）", a:672000, unit:"円",
+   hint:"84,000＋756,000−168,000＝672,000。ボックス図は「合計−月末＝完成品」の形で使います。"},
+  {key:"convEnd", n:"STEP 4", q:"加工費の月末仕掛品原価は？（月初90,000＋当月990,000）÷（完成1,600個＋月末換算200個）×200個", a:120000, unit:"円",
+   hint:"1,080,000÷1,800個＝@600。600×200個＝120,000。"},
+  {key:"convDone", n:"STEP 5", q:"加工費の完成品分は？", a:960000, unit:"円",
+   hint:"90,000＋990,000−120,000＝960,000。"},
+  {key:"final", n:"FINAL", q:"完成品総合原価は？（原料費の完成品分＋加工費の完成品分）", a:1632000, unit:"円",
+   hint:"672,000＋960,000＝1,632,000。月末仕掛品原価は 168,000＋120,000＝288,000 です。"},
+];
+
+/* ================= utils ================= */
+const $ = s => document.querySelector(s);
+const yen = n => "¥" + n.toLocaleString("ja-JP");
+const store = {
+  get(k, d){ try{ const v = localStorage.getItem("bokitore:"+k); return v===null ? d : JSON.parse(v); }catch(e){ return d; } },
+  set(k, v){ try{ localStorage.setItem("bokitore:"+k, JSON.stringify(v)); }catch(e){} },
+};
+
+/* ================= screens ================= */
+let mode = "home"; // home | quiz | done | box
+function show(name){
+  mode = name;
+  document.querySelectorAll(".screen").forEach(s => s.classList.remove("on"));
+  $("#scr-"+name).classList.add("on");
+  window.scrollTo(0,0);
+  updateCta();
+  if(name==="home") renderStats();
+}
+document.querySelectorAll("[data-home]").forEach(b => b.addEventListener("click", () => show("home")));
+
+/* ================= stats ================= */
+function getStats(){
+  const raw = store.get("stats", null);
+  const n = x => (typeof x === "number" && isFinite(x) && x >= 0) ? Math.floor(x) : 0;
+  if(!raw || typeof raw !== "object") return {done:0, correct:0, streak:0};
+  return {done:n(raw.done), correct:n(raw.correct), streak:n(raw.streak)};
+}
+function renderStats(){
+  const st = getStats();
+  $("#st-done").textContent = st.done;
+  $("#st-rate").textContent = st.done ? Math.round(st.correct/st.done*100) + "%" : "–";
+  $("#st-streak").textContent = st.streak;
+}
+function record(correct){
+  const st = getStats();
+  st.done++; if(correct){ st.correct++; st.streak++; } else st.streak = 0;
+  store.set("stats", st);
+}
+
+/* ================= sheet plumbing ================= */
+const scrim = $("#scrim");
+let openSheetEl = null;
+function openSheet(el){
+  closeSheet();
+  openSheetEl = el; el.classList.add("on"); scrim.classList.add("on");
+}
+function closeSheet(){
+  if(openSheetEl){ openSheetEl.classList.remove("on"); openSheetEl = null; }
+  scrim.classList.remove("on");
+}
+scrim.addEventListener("click", closeSheet);
+
+/* ================= numpad (calculator semantics) ================= */
+function makeCalc(valEl){
+  const c = {acc:null, op:null, cur:"", fresh:false, err:false};
+  c.render = () => {
+    if(c.err){ valEl.textContent = "E"; return; }
+    const shown = c.cur !== "" ? c.cur : (c.acc !== null ? String(c.acc) : "0");
+    valEl.textContent = Number(shown).toLocaleString("ja-JP");
+  };
+  c.digit = d => {
+    if(c.err) c.clear();
+    if(c.fresh){ c.cur = ""; c.fresh = false; }
+    if(c.cur.length >= 12) return;
+    c.cur = (c.cur === "0" ? "" : c.cur) + d;
+    c.render();
+  };
+  c.apply = () => {
+    const x = Number(c.cur || 0);
+    if(c.acc === null){ c.acc = x; }
+    else if(c.op === "＋") c.acc += x;
+    else if(c.op === "−") c.acc -= x;
+    else if(c.op === "×") c.acc *= x;
+    else if(c.op === "÷"){ if(x === 0){ c.err = true; c.acc = 0; } else c.acc = c.acc / x; }
+    c.acc = Math.round(c.acc * 100) / 100;
+  };
+  c.pressOp = op => {
+    if(c.err){ c.render(); return; }
+    if(c.cur !== "" ) c.apply();
+    else if(c.acc === null) c.acc = 0;
+    if(op === "＝"){ c.cur = String(c.acc); c.acc = null; c.op = null; c.fresh = true; }
+    else { c.op = op; c.cur = ""; }
+    c.render();
+  };
+  c.back = () => { c.cur = c.cur.slice(0,-1); c.render(); };
+  c.clear = () => { c.acc=null; c.op=null; c.cur=""; c.fresh=false; c.err=false; c.render(); };
+  c.value = () => {
+    if(c.err) return 0;
+    if(c.op !== null && c.cur !== "") c.pressOp("＝");  // ＝を押し忘れてもOKで計算を確定する
+    if(c.err) return 0;
+    if(c.cur !== "") return Math.round(Number(c.cur));
+    if(c.acc !== null) return Math.round(c.acc);
+    return 0;
+  };
+  return c;
+}
+function wirePad(rootSel, calc, onOk){
+  document.querySelectorAll(rootSel + " .npk").forEach(k => {
+    k.addEventListener("click", () => {
+      const op = k.dataset.op, key = k.dataset.k || k.textContent.trim();
+      if(op) calc.pressOp(op);
+      else if(key === "C") calc.clear();
+      else if(key === "⌫") calc.back();
+      else if(key === "OK" || key === "↵メモ") onOk();
+      else { for(const ch of key) calc.digit(ch); }
+    });
+  });
+}
+
+/* main numpad (answer input) */
+const npCalc = makeCalc($("#np-val"));
+let npCommit = null, npDelete = null;
+function askNumber(ctxLabel, cb, opts){
+  opts = opts || {};
+  npCalc.clear();
+  if(opts.prefill){ npCalc.cur = String(opts.prefill); npCalc.fresh = true; npCalc.render(); }
+  $("#np-ctx").textContent = ctxLabel;
+  npCommit = cb;
+  npDelete = opts.onDelete || null;
+  $("#np-del").className = "npdelbtn" + (npDelete ? " on" : "");
+  openSheet($("#sheet-num"));
+}
+$("#np-del").addEventListener("click", () => {
+  const cb = npDelete; npDelete = null; npCommit = null;
+  closeSheet();
+  if(cb) cb();
+});
+wirePad("#sheet-num", npCalc, () => {
+  const v = npCalc.value();
+  if(v <= 0) return;
+  const cb = npCommit; npCommit = null;
+  closeSheet();
+  if(cb) cb(v);
+});
+
+/* free calculator + memo drawer */
+const cpCalc = makeCalc($("#cp-val"));
+wirePad("#sheet-calc", cpCalc, () => {
+  if(cpCalc.err) return;
+  const memo = $("#memo");
+  memo.value = (memo.value ? memo.value + "\n" : "") + cpCalc.value().toLocaleString("ja-JP");
+  store.set("memo", memo.value);
+});
+const savedMemo = store.get("memo", "");
+$("#memo").value = typeof savedMemo === "string" ? savedMemo : "";
+$("#memo").addEventListener("input", e => store.set("memo", e.target.value));
+$("#fab-calc").addEventListener("click", () => {
+  if(openSheetEl === $("#sheet-calc")) closeSheet(); else openSheet($("#sheet-calc"));
+});
+
+/* ================= 仕訳ドリル ================= */
+let queue = [], qi = 0, sessionDone = 0, sessionCorrect = 0, sessionTotal = 0;
+let entry = {debit:[], credit:[]};
+let answered = false;
+let retried = new Set();
+
+$("#btn-shiwake").addEventListener("click", () => {
+  queue = PROBLEMS.map((_,i) => i);
+  qi = 0; sessionDone = 0; sessionCorrect = 0; sessionTotal = PROBLEMS.length;
+  retried = new Set();
+  show("quiz"); renderQ();
+});
+
+function curP(){ return PROBLEMS[queue[qi]]; }
+
+function renderQ(){
+  const p = curP();
+  answered = false;
+  entry = {debit:[], credit:[]};
+  $("#q-cat").textContent = p.cat + "簿記";
+  $("#q-text").textContent = p.text;
+  $("#q-prog").style.width = (qi / queue.length * 100) + "%";
+  $("#q-count").textContent = (qi+1) + "/" + queue.length;
+  $("#q-fb").className = "fb";
+  renderLines();
+  updateCta();
+}
+
+function renderLines(){
+  for(const side of ["debit","credit"]){
+    const wrap = side === "debit" ? $("#q-dlines") : $("#q-clines");
+    wrap.innerHTML = "";
+    entry[side].forEach((ln, idx) => {
+      const b = document.createElement("button");
+      b.className = "jline";
+      b.innerHTML = '<span class="a">' + ln[0] + '</span><span class="m num">' + yen(ln[1]) + '</span><span class="del">タップで修正</span>';
+      b.addEventListener("click", () => {
+        if(answered) return;
+        askNumber((side === "debit" ? "借方 " : "貸方 ") + ln[0] + " の金額を修正", v => {
+          entry[side][idx][1] = v; renderLines(); updateCta();
+        }, {prefill: ln[1], onDelete: () => {
+          entry[side].splice(idx,1); renderLines(); updateCta();
+        }});
+      });
+      wrap.appendChild(b);
+    });
+  }
+  const dt = entry.debit.reduce((s,l)=>s+l[1],0), ct = entry.credit.reduce((s,l)=>s+l[1],0);
+  const bal = $("#q-bal");
+  bal.textContent = "借方 " + dt.toLocaleString("ja-JP") + " ／ 貸方 " + ct.toLocaleString("ja-JP");
+  bal.className = "baltag num" + (dt>0 && dt===ct ? " ok" : "");
+}
+
+document.querySelectorAll(".addline").forEach(btn => {
+  btn.addEventListener("click", () => {
+    if(answered) return;
+    const side = btn.dataset.side;
+    const p = curP();
+    $("#acct-title").textContent = (side === "debit" ? "借方" : "貸方") + "の科目を選ぶ";
+    const wrap = $("#acct-chips");
+    wrap.innerHTML = "";
+    p.cands.forEach(name => {
+      const c = document.createElement("button");
+      c.className = "chip"; c.textContent = name;
+      c.addEventListener("click", () => {
+        closeSheet();
+        askNumber((side === "debit" ? "借方 " : "貸方 ") + name + " の金額", v => {
+          entry[side].push([name, v]); renderLines(); updateCta();
+        });
+      });
+      wrap.appendChild(c);
+    });
+    openSheet($("#sheet-acct"));
+  });
+});
+
+function sideEq(a, b){
+  if(a.length !== b.length) return false;
+  const rest = b.map(x => x[0] + "|" + x[1]);
+  for(const ln of a){
+    const k = ln[0] + "|" + ln[1];
+    const i = rest.indexOf(k);
+    if(i < 0) return false;
+    rest.splice(i,1);
+  }
+  return true;
+}
+
+function checkQ(){
+  const p = curP();
+  const ok = sideEq(entry.debit, p.debit) && sideEq(entry.credit, p.credit);
+  answered = true;
+  sessionDone++;
+  if(ok) sessionCorrect++;
+  record(ok);
+  const fb = $("#q-fb");
+  fb.className = "fb on " + (ok ? "good" : "bad");
+  $("#q-fb-title").textContent = ok ? "正解！" : "不正解…";
+  const ansHtml = [];
+  const rows = Math.max(p.debit.length, p.credit.length);
+  for(let i=0;i<rows;i++){
+    const d = p.debit[i] ? p.debit[i][0] + "　" + yen(p.debit[i][1]) : "";
+    const c = p.credit[i] ? p.credit[i][0] + "　" + yen(p.credit[i][1]) : "";
+    ansHtml.push('<div class="ansrow"><span class="num">' + d + '</span><span class="num">' + c + '</span></div>');
+  }
+  $("#q-fb-ans").innerHTML = '<div class="ans">' + ansHtml.join("") + '</div>';
+  $("#q-fb-expl").textContent = p.expl;
+  if(!ok && !retried.has(queue[qi])){
+    retried.add(queue[qi]);
+    queue.push(queue[qi]);   // もう一度、最後に出す
+  }
+  fb.scrollIntoView({behavior:"smooth", block:"nearest"});
+  // 連打で解説を飛ばさないよう、判定直後は少し無効化
+  cta.disabled = true;
+  setTimeout(updateCta, 700);
+}
+
+function nextQ(){
+  qi++;
+  if(qi >= queue.length){
+    $("#d-score").textContent = sessionCorrect + " / " + sessionDone;
+    $("#d-note").textContent = retried.size
+      ? "間違えた " + retried.size + " 問は後ろに回して再出題しました。明日もう一度出すのが本実装の予定です。"
+      : "全問一発正解。この調子です。";
+    show("done");
+    return;
+  }
+  renderQ();
+}
+
+/* ================= ボックス図ドリル ================= */
+let bi = 0, bDone = false;
+$("#btn-box").addEventListener("click", () => {
+  bi = 0; bDone = false;
+  document.querySelectorAll(".blank").forEach(b => { b.textContent = "？"; b.className = "blank"; });
+  $("#b-fb").className = "fb";
+  $("#b-hint").className = "hint";
+  $("#b-step").style.display = "";   // 完答後の再挑戦で設問カードを戻す
+  show("box"); renderB();
+});
+
+function renderB(){
+  const s = BOX_STEPS[bi];
+  $("#b-prog").style.width = (bi / BOX_STEPS.length * 100) + "%";
+  $("#b-count").textContent = (bi+1) + "/" + BOX_STEPS.length;
+  $("#b-step-n").textContent = s.n;
+  $("#b-step-q").textContent = s.q;
+  $("#b-hint").className = "hint";
+  $("#b-hint").textContent = "ヒント：" + s.hint;
+  document.querySelectorAll(".blank").forEach(b => b.classList.remove("active"));
+  const target = document.querySelector('.blank[data-blank="' + s.key + '"]');
+  if(target) target.classList.add("active");
+  updateCta();
+}
+
+function answerB(){
+  const s = BOX_STEPS[bi];
+  askNumber(s.n + "（" + s.unit + "）", v => {
+    if(v === s.a){
+      record(true);
+      const target = document.querySelector('.blank[data-blank="' + s.key + '"]');
+      if(target){
+        target.textContent = s.unit === "円" ? yen(s.a) : s.a.toLocaleString("ja-JP");
+        target.className = "blank done num";
+      }
+      bi++;
+      if(bi >= BOX_STEPS.length){
+        bDone = true;
+        $("#b-prog").style.width = "100%";
+        const fb = $("#b-fb");
+        fb.className = "fb on good";
+        $("#b-fb-title").textContent = "完答！";
+        $("#b-fb-body").innerHTML = '<div class="ans num">月末仕掛品原価 ¥288,000<br>完成品総合原価 ¥1,632,000（単位原価 @¥1,020）</div><p class="expl">紙の下書きでやっていた計算が、ボックス図をそのまま埋める形で完結しました。これが「電車モード」の狙いです。</p>';
+        $("#b-step").style.display = "none";
+        updateCta();
+      } else {
+        renderB();
+      }
+    } else {
+      record(false);
+      const card = $("#b-step");
+      card.classList.remove("shake"); void card.offsetWidth; card.classList.add("shake");
+      $("#b-hint").className = "hint on";
+      updateCta();
+    }
+  });
+}
+
+/* ================= CTA button ================= */
+const cta = $("#cta");
+function updateCta(){
+  if(mode === "quiz"){
+    if(answered){ cta.textContent = qi+1 >= queue.length ? "結果を見る" : "次の問題へ"; cta.disabled = false; }
+    else {
+      const dt = entry.debit.reduce((s,l)=>s+l[1],0), ct = entry.credit.reduce((s,l)=>s+l[1],0);
+      cta.textContent = "判定する";
+      cta.disabled = !(entry.debit.length && entry.credit.length && dt === ct);
+    }
+  } else if(mode === "box"){
+    if(bDone){ cta.textContent = "ホームへ戻る"; cta.disabled = false; }
+    else { cta.textContent = "この欄に入力する"; cta.disabled = false; }
+  } else if(mode === "done"){
+    cta.textContent = "もう一度解く"; cta.disabled = false;
+  } else {
+    cta.textContent = "ドリルを選んでスタート"; cta.disabled = true;
+  }
+}
+cta.addEventListener("click", () => {
+  if(mode === "quiz"){ answered ? nextQ() : checkQ(); }
+  else if(mode === "box"){ bDone ? show("home") : answerB(); }
+  else if(mode === "done"){ $("#btn-shiwake").click(); }
+});
+
+renderStats();
+updateCta();
+</script>
