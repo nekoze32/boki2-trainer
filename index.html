@@ -209,7 +209,7 @@
   /* sheets */
   .scrim{position:fixed; inset:0; background:rgba(10,15,12,.45); opacity:0; pointer-events:none; transition:opacity .2s; z-index:30}
   .scrim.on{opacity:1; pointer-events:auto}
-  .sheet{position:fixed; left:0; right:0; bottom:0; z-index:31; background:var(--surface); border-radius:20px 20px 0 0; box-shadow:0 -8px 40px rgba(0,0,0,.25); transform:translateY(105%); transition:transform .22s ease-out; padding:14px 16px calc(16px + env(safe-area-inset-bottom)); max-height:85dvh; overflow-y:auto}
+  .sheet{position:fixed; left:0; right:0; bottom:0; z-index:31; background:var(--surface); border-radius:20px 20px 0 0; box-shadow:0 -8px 40px rgba(0,0,0,.25); transform:translateY(105%); transition:transform .22s ease-out; padding:14px 16px calc(96px + env(safe-area-inset-bottom)); max-height:min(85dvh, 88svh); overflow-y:auto; -webkit-overflow-scrolling:touch; overscroll-behavior:contain; touch-action:pan-y}
   .sheet.on{transform:translateY(0)}
   .sheet .inner{max-width:480px; margin:0 auto}
   .sheet h3{margin:0 0 10px; font-size:14px}
@@ -224,7 +224,10 @@
   .seg button.sel{background:var(--surface); box-shadow:0 1px 4px rgba(0,0,0,.12); font-weight:700; color:var(--accent)}
 
   /* numpad */
-  .npdisp{background:var(--surface2); border:1px solid var(--line); border-radius:12px; padding:8px 14px; text-align:right; margin-bottom:10px}
+  .npdisp{background:var(--surface2); border:1px solid var(--line); border-radius:12px; padding:8px 14px; text-align:right; margin-bottom:10px; display:flex; align-items:center; gap:10px}
+  .npdisp .disp{flex:1; min-width:0}
+  .closex.inrow{position:static; flex:none; width:44px; height:44px}
+  .npdisp .okmini{flex:none; height:44px; padding:0 16px; border-radius:10px; background:var(--accent); color:var(--accent-ink); font-weight:700}
   .npdisp .ctx{font-size:11px; color:var(--ink-soft); text-align:left}
   .npdisp .val{font-size:26px; font-weight:600; min-height:34px}
   .npgrid{display:grid; grid-template-columns:repeat(4,1fr); gap:8px}
@@ -402,8 +405,8 @@
 </div>
 
 <div class="sheet" id="sheet-num" role="dialog" aria-label="金額を入力">
-  <div class="inner"><div class="grabber"></div><button class="closex" aria-label="閉じる">✕</button>
-    <div class="npdisp"><div class="ctx" id="np-ctx"></div><div class="val num" id="np-val">0</div></div>
+  <div class="inner"><div class="grabber"></div>
+    <div class="npdisp"><button class="closex inrow" aria-label="閉じる">✕</button><div class="disp"><div class="ctx" id="np-ctx"></div><div class="val num" id="np-val">0</div></div><button class="npk okmini" data-k="OK">OK</button></div>
     <div class="npgrid">
       <button class="npk num">7</button><button class="npk num">8</button><button class="npk num">9</button><button class="npk op" data-op="÷">÷</button>
       <button class="npk num">4</button><button class="npk num">5</button><button class="npk num">6</button><button class="npk op" data-op="×">×</button>
@@ -416,9 +419,9 @@
 </div>
 
 <div class="sheet" id="sheet-calc" role="dialog" aria-label="電卓とメモ">
-  <div class="inner"><div class="grabber"></div><button class="closex" aria-label="閉じる">✕</button><h3>メモ & 電卓</h3>
+  <div class="inner"><div class="grabber"></div><h3>メモ & 電卓</h3>
     <textarea class="memo" id="memo" placeholder="下書きメモ（この端末にだけ保存されます）"></textarea>
-    <div class="npdisp"><div class="val num" id="cp-val">0</div></div>
+    <div class="npdisp"><button class="closex inrow" aria-label="閉じる">✕</button><div class="disp"><div class="val num" id="cp-val">0</div></div><button class="npk okmini" data-k="↵メモ">↵メモ</button></div>
     <div class="npgrid">
       <button class="npk num">7</button><button class="npk num">8</button><button class="npk num">9</button><button class="npk op" data-op="÷">÷</button>
       <button class="npk num">4</button><button class="npk num">5</button><button class="npk num">6</button><button class="npk op" data-op="×">×</button>
@@ -665,15 +668,23 @@ $("#a2hs-install").addEventListener("click", async () => { if(!deferredInstall) 
 const scrim = $("#scrim");
 let openSheetEl = null, lastFocus = null;
 document.querySelectorAll(".sheet").forEach(s => { s.inert = true; s.setAttribute("aria-modal","true"); s.tabIndex = -1; });
+function fitSheet(){   // iOSのブラウザ下部ツールバーに隠れないよう、見えている領域の底に合わせる
+  if(!openSheetEl) return;
+  const vv = window.visualViewport;
+  const off = vv ? Math.max(0, Math.round(window.innerHeight - (vv.height + vv.offsetTop))) : 0;
+  openSheetEl.style.bottom = off + "px";
+}
+if(window.visualViewport){ window.visualViewport.addEventListener("resize", fitSheet); window.visualViewport.addEventListener("scroll", fitSheet); }
 function openSheet(el){
   closeSheet();
   lastFocus = document.activeElement;
   openSheetEl = el; el.inert = false; el.classList.add("on"); scrim.classList.add("on");
+  el.scrollTop = 0; fitSheet();
   $("#app").inert = true; $(".actionbar").inert = true;
-  setTimeout(() => el.focus(), 30);
+  setTimeout(() => { fitSheet(); el.focus({preventScroll:true}); }, 30);
 }
 function closeSheet(){
-  if(openSheetEl){ openSheetEl.classList.remove("on"); openSheetEl.inert = true; openSheetEl = null; }
+  if(openSheetEl){ openSheetEl.classList.remove("on"); openSheetEl.inert = true; openSheetEl.style.bottom = ""; openSheetEl = null; }
   scrim.classList.remove("on");
   $("#app").inert = false; $(".actionbar").inert = false;
   if(lastFocus && lastFocus.focus){ try{ lastFocus.focus(); }catch(e){} }
@@ -682,6 +693,13 @@ function closeSheet(){
 scrim.addEventListener("click", closeSheet);
 document.addEventListener("keydown", e => { if(e.key === "Escape" && openSheetEl) closeSheet(); });
 document.querySelectorAll(".sheet .closex").forEach(b => b.addEventListener("click", closeSheet));
+// 下スワイプで閉じる（シートが先頭までスクロールされている時だけ）
+document.querySelectorAll(".sheet").forEach(sh => {
+  let y0 = null;
+  sh.addEventListener("touchstart", e => { y0 = sh.scrollTop <= 0 ? e.touches[0].clientY : null; }, {passive:true});
+  sh.addEventListener("touchmove", e => { if(y0 !== null && e.touches[0].clientY - y0 > 80 && sh.scrollTop <= 0){ y0 = null; closeSheet(); } }, {passive:true});
+  sh.addEventListener("touchend", () => { y0 = null; });
+});
 
 /* toast */
 let toastTimer = null;
