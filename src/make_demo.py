@@ -13,7 +13,7 @@
 
 素材は「使い込んだ状態」を作ってから撮る。まっさらの 0/26駅 では魅力が伝わらない。
 """
-import os, sys, io, json, datetime
+import os, sys, io, json, time, datetime
 from playwright.sync_api import sync_playwright
 from PIL import Image, ImageDraw, ImageFont
 
@@ -101,13 +101,8 @@ def main():
         page.evaluate(T.HELPERS)
         page.wait_for_timeout(500)
 
-        gscale = GIF_W / W
-        def shot(scale=1.0, pad=26):
-            return framed(page.screenshot(), pad=pad, scale=scale * (1 / DSF) * DSF / DSF)
-        def gframe(n=1):
-            f = framed(page.screenshot(), pad=18, radius=26, scale=gscale / DSF * DSF)
-            return [f] * n
-        def raw_frame(n=1):
+        # 画面の取り込み（GIF用・枠つき）
+        def grab():
             im = Image.open(io.BytesIO(page.screenshot())).convert("RGB")
             im = im.resize((GIF_W, int(im.height * GIF_W / im.width)), Image.LANCZOS)
             w, h = im.size
@@ -121,11 +116,27 @@ def main():
                 d.line([(0, y), (canvas.width, y)],
                        fill=tuple(int(BG1[i] + (BG2[i] - BG1[i]) * t) for i in range(3)))
             canvas.paste(im, (pad, pad), mask)
-            return [canvas] * n
-        def still(name, scale=0.62):
-            im = Image.open(io.BytesIO(page.screenshot())).convert("RGB")
-            im = im.resize((int(W * scale * DSF / DSF * scale / scale), int(im.height * (W * scale) / im.width)), Image.LANCZOS) if False else im
-            buf = io.BytesIO(); im.save(buf, "PNG")
+            return canvas
+
+        def hold(n=1):
+            """止まっている画（同じ絵をn枚）"""
+            f = grab(); return [f] * n
+
+        def motion(sec=0.9):
+            """アニメーションの最中を、撮れるだけ連写する"""
+            fs = []; t0 = time.time()
+            while time.time() - t0 < sec:
+                fs.append(grab())
+            return fs
+
+        def act(js, sec=0.9, after=2):
+            """操作 → その直後から連写 → 落ち着いた画を数枚"""
+            page.evaluate(js)
+            return motion(sec) + hold(after)
+
+        def still(name):
+            buf = io.BytesIO()
+            Image.open(io.BytesIO(page.screenshot())).convert("RGB").save(buf, "PNG")
             framed(buf.getvalue(), pad=30, radius=40).save(os.path.join(OUT, name))
             print("  ", name)
 
@@ -138,55 +149,64 @@ def main():
         page.wait_for_timeout(600); still("s_drill.png")
         page.evaluate("goHome()"); page.wait_for_function("mode === 'home'")
 
+        # アニメーションを3倍ゆっくりにして、その最中を連写する。
+        # 再生は100ms間隔なので、captureのコマ落ちが埋まって「動いて見える」GIFになる。
+        SLOWMO = """*, *::before, *::after {
+            animation-duration: .72s !important;
+            transition-duration: .72s !important;
+        }"""
+        slow = page.add_style_tag(content=SLOWMO)
+
         # ---------- GIF：計算ドリル ----------
         print("GIF ドリル:")
-        frames = []
-        page.evaluate("setTab('drills')"); page.wait_for_timeout(500); frames += raw_frame(3)
-        page.evaluate("startDrill('D1')"); page.wait_for_timeout(700); frames += raw_frame(3)
-        page.evaluate("document.querySelector('#b-boxes .blank.active').click()"); page.wait_for_timeout(600); frames += raw_frame(2)
+        f = []
+        page.evaluate("setTab('drills')"); page.wait_for_timeout(700)
+        f += hold(6)
+        f += act("startDrill('D1')", 1.1, 4)                                  # 右からスライドイン
+        f += act("document.querySelector('#b-boxes .blank.active').click()", 1.0, 3)   # テンキーがせり上がる
         for ch in "200":
-            page.evaluate("__t.press('%s')" % ch); page.wait_for_timeout(180); frames += raw_frame(1)
-        page.evaluate("__t.press('OK')"); page.wait_for_timeout(700); frames += raw_frame(3)
-        page.evaluate("__t.cta()"); page.wait_for_timeout(500)
+            f += act("__t.press('%s')" % ch, 0.18, 1)
+        f += act("__t.press('OK')", 1.0, 4)                                   # シートが下がって欄が埋まる
+        f += act("__t.cta()", 0.9, 2)
         for ch in "168000":
-            page.evaluate("__t.press('%s')" % ch); page.wait_for_timeout(140); frames += raw_frame(1)
-        page.evaluate("__t.press('OK')"); page.wait_for_timeout(700); frames += raw_frame(3)
+            f += act("__t.press('%s')" % ch, 0.14, 1)
+        f += act("__t.press('OK')", 1.0, 4)
         for v in ["672000", "120000", "960000", "288000"]:
-            page.evaluate("__t.cta(); __t.keys('%s'); __t.press('OK')" % v); page.wait_for_timeout(450); frames += raw_frame(1)
-        page.evaluate("__t.cta(); __t.keys('1632000'); __t.press('OK')"); page.wait_for_timeout(900); frames += raw_frame(5)
-        save_gif(frames, os.path.join(OUT, "drill.gif"), ms=460)
-        page.evaluate("goHome()"); page.wait_for_function("mode === 'home'")
+            page.evaluate("__t.cta(); __t.keys('%s')" % v); page.wait_for_timeout(120)
+            f += act("__t.press('OK')", 0.5, 1)
+        page.evaluate("__t.cta(); __t.keys('1632000')"); page.wait_for_timeout(120)
+        f += act("__t.press('OK')", 1.2, 8)                                   # 完答
+        save_gif(f, os.path.join(OUT, "drill.gif"), ms=100)
+        page.evaluate("goHome()"); page.wait_for_function("mode === 'home'"); page.wait_for_timeout(400)
 
         # ---------- GIF：仕訳 ----------
         print("GIF 仕訳:")
-        page.evaluate("""(() => {   // 電卓の見せ場がある問題を選ぶ（予定配賦 800×450）
-            const i = PROBLEMS.findIndex(p => p.id === 'K08');
-            startSession('retry', {ids: ['K08', 'S12']});
-        })()""")
-        page.wait_for_timeout(700)
-        frames = raw_frame(4)
-        page.evaluate("document.querySelector(`.addline[data-side='debit']`).click()"); page.wait_for_timeout(600); frames += raw_frame(3)
-        page.evaluate("__t.chip('仕掛品')"); page.wait_for_timeout(600); frames += raw_frame(2)
+        f = hold(4)
+        f += act("startSession('retry', {ids: ['K08', 'S12']})", 1.1, 4)
+        f += act("document.querySelector(`.addline[data-side='debit']`).click()", 1.0, 3)
+        f += act("__t.chip('仕掛品')", 1.0, 2)
         for k in ["8", "00", "×", "4", "5", "0"]:
-            page.evaluate("__t.press('%s')" % k); page.wait_for_timeout(170); frames += raw_frame(1)
-        page.evaluate("__t.press('OK')"); page.wait_for_timeout(700); frames += raw_frame(3)
-        page.evaluate("document.querySelector(`.addline[data-side='credit']`).click()"); page.wait_for_timeout(500)
-        page.evaluate("__t.chip('製造間接費')"); page.wait_for_timeout(500)
-        page.evaluate("__t.keys('360000'); __t.press('OK')"); page.wait_for_timeout(600); frames += raw_frame(3)
-        page.evaluate("__t.cta()"); page.wait_for_timeout(1100); frames += raw_frame(6)
-        save_gif(frames, os.path.join(OUT, "shiwake.gif"), ms=440)
-        page.evaluate("goHome()"); page.wait_for_function("mode === 'home'")
+            f += act("__t.press('%s')" % k, 0.16, 1)
+        f += act("__t.press('OK')", 1.0, 4)
+        page.evaluate("document.querySelector(`.addline[data-side='credit']`).click()"); page.wait_for_timeout(700)
+        page.evaluate("__t.chip('製造間接費')"); page.wait_for_timeout(600)
+        page.evaluate("__t.keys('360000')"); page.wait_for_timeout(200)
+        f += act("__t.press('OK')", 1.0, 3)
+        f += act("__t.cta()", 1.4, 10)                                        # 判定＝駅に到着の演出
+        save_gif(f, os.path.join(OUT, "shiwake.gif"), ms=100)
+        page.evaluate("goHome()"); page.wait_for_function("mode === 'home'"); page.wait_for_timeout(400)
 
         # ---------- GIF：模試 ----------
         print("GIF 模試:")
-        frames = []
-        page.evaluate("setTab('exam')"); page.wait_for_timeout(500); frames += raw_frame(3)
-        page.evaluate("startExam('M1', true)"); page.wait_for_timeout(900); frames += raw_frame(4)
+        f = []
+        f += act("setTab('exam')", 0.9, 4)
+        f += act("startExam('M1', true)", 1.3, 6)
         for sec in [1, 2, 3, 4]:
-            page.evaluate("__t.examGo(%d)" % sec); page.wait_for_timeout(600); frames += raw_frame(3)
-        page.evaluate("__t.examGo(0)"); page.wait_for_timeout(500); frames += raw_frame(3)
-        save_gif(frames, os.path.join(OUT, "exam.gif"), ms=620)
+            f += act("__t.examGo(%d)" % sec, 0.7, 3)
+        f += act("__t.examGo(0)", 0.7, 5)
+        save_gif(f, os.path.join(OUT, "exam.gif"), ms=110)
         page.evaluate("goHome()"); page.wait_for_function("mode === 'home'")
+        page.evaluate("(e => e && e.remove())(document.querySelector('style[data-slowmo]'))")
 
         # ---------- 結果画面の静止画 ----------
         page.evaluate("""startSession('retry', {ids: PROBLEMS.slice(0,5).map(p => p.id)});

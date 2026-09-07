@@ -1180,11 +1180,13 @@ function resumeSession(){
   show("quiz"); renderQ();
   entry = s.entry; renderLines(); updateCta();   // 入力途中の仕訳も復元
 }
+// 遅れている問題を先に出す。同じ期日の中は並べ替えない＝直前の shuffle 順のまま。
+// （ここで箱を第2基準にすると、期日が同じ日に固まったとき順番まで固定されてしまう。
+//   苦手を先に出す意図は「箱が低いほど期日が早く来る」ですでに満たされている）
 function byPriority(a, b){
   const ra = progress[a.id], rb = progress[b.id];
   const da = ra && ra.seen ? ra.due : "9999", db = rb && rb.seen ? rb.due : "9999";
-  if(da !== db) return da < db ? -1 : 1;
-  return (ra ? ra.box : 0) - (rb ? rb.box : 0);
+  return da === db ? 0 : (da < db ? -1 : 1);
 }
 function startSession(kind, opt){
   let list = [];
@@ -1193,11 +1195,10 @@ function startSession(kind, opt){
     const fresh = shuffle(PROBLEMS.filter(p => inCat(p) && !(progress[p.id] && progress[p.id].seen))).slice(0, settings.n - due.length);
     list = due.concat(fresh);
     if(!list.length){   // 復習待ちも新規も無いときだけ、定着の低い順にもう一周（期日前の問題を無理に混ぜない）
-      const rest = shuffle(PROBLEMS.filter(inCat)).sort((a,b) => (progress[a.id]||{box:0}).box - (progress[b.id]||{box:0}).box);
-      list = rest.slice(0, settings.n);
+      list = shuffle(PROBLEMS.filter(inCat)).slice(0, settings.n);   // 完全ランダム（定着の低い順に固定しない）
     }
   } else if(kind === "topic"){
-    list = shuffle(PROBLEMS.filter(p => p.cat === opt.cat && p.topic === opt.topic)).sort(byPriority).slice(0, settings.n);
+    list = shuffle(PROBLEMS.filter(p => p.cat === opt.cat && p.topic === opt.topic)).slice(0, settings.n);   // 論点別は完全ランダム
   } else if(kind === "retry"){
     list = opt.ids.map(id => PROBLEMS.find(p => p.id === id)).filter(Boolean);
   }

@@ -780,6 +780,41 @@ def t_beta(ctx):
     assert pid in u and ev(p, "BUILD") in u, "フォームに問題IDと版番号が渡っていない: " + u
     assert not p._errors, p._errors
 
+
+@test("出題順：毎回変わる（順番で答えを覚えさせない）。ただし遅れている問題は先に出す")
+def t_order(ctx):
+    p = fresh_page(ctx)
+    def five(setup, start):
+        seen_order, seen_set = set(), set()
+        for _ in range(5):
+            ev(p, "localStorage.clear(); progress={}; days={}; drillDone={}; examLog={};")
+            ev(p, setup); ev(p, start)
+            q = ev(p, "queue")
+            seen_order.add(",".join(q)); seen_set.add(frozenset(q))
+            ev(p, "goHome()"); p.wait_for_function("mode === 'home'")
+        return seen_order, seen_set, q
+    # 復習がたまっているとき、出る問題の顔ぶれも順番も固定されない
+    seed = ("const t=todayStr(); PROBLEMS.slice(0,20).forEach((q,i)=>"
+            "{progress[q.id]={box:i%4, due:t, seen:2, wrong:0};}); store.set('progress',progress); renderHome();")
+    order, sets, _ = five(seed, "startSession('today')")
+    assert len(order) >= 3, "復習の出題順が固定されている（%d通りしかない）" % len(order)
+    assert len(sets) >= 3, "毎回おなじ問題ばかり出ている（%d通りしかない）" % len(sets)
+    # 期日が古いものは先に出る（優先そのものは生きている）
+    seed2 = ("const t=todayStr(); PROBLEMS.slice(0,3).forEach((q,i)=>"
+             "{progress[q.id]={box:1, due:addDays(t,-5+i), seen:2, wrong:0};}); "
+             "PROBLEMS.slice(3,20).forEach(q=>{progress[q.id]={box:2, due:t, seen:2, wrong:0};}); "
+             "store.set('progress',progress); renderHome();")
+    for _ in range(3):
+        ev(p, "localStorage.clear(); progress={}; days={}; drillDone={}; examLog={};")
+        ev(p, seed2); ev(p, "startSession('today')")
+        head = ev(p, "queue").__getitem__(slice(0, 3))
+        assert set(head) == {"S01", "S02", "S03"}, "遅れている問題が先に出ていない: " + str(head)
+        ev(p, "goHome()"); p.wait_for_function("mode === 'home'")
+    # 論点別も順番が変わる
+    order, _, _ = five("renderHome()", "startSession('topic', {cat:'商業', topic:'引当金'})")
+    assert len(order) >= 3, "論点別の出題順が固定されている（%d通り）" % len(order)
+    assert not p._errors, p._errors
+
 # ---------------- 実行 ----------------
 def main():
     if not os.path.exists(os.path.join(HERE, "bokitore.html")):
