@@ -244,6 +244,8 @@
   .blank.active{background:var(--accent-soft)}
   .blank.done{border-color:var(--ok-line); color:var(--ok-ink)}
   .blank.wrong{border-color:var(--warn); color:var(--warn); background:transparent}
+  .missbtns{display:flex; gap:10px; margin-top:12px} .missbtns .btn2{margin:0; flex:1}
+  #miss-hint{display:block; margin:10px 0 0}
   .stepcard{background:var(--surface); border:1px solid var(--line); border-radius:16px; padding:14px 16px; margin-top:12px; box-shadow:var(--shadow)}
   .stepcard .sn{font-size:11px; font-weight:700; letter-spacing:.12em; color:var(--accent)}
   .stepcard p{margin:4px 0 0; font-size:14px}
@@ -590,6 +592,14 @@
       <button class="npk num zero">0</button><button class="npk num" data-k="00">00</button><button class="npk op" data-op="＝">＝</button>
     </div>
     <button class="npdelbtn" id="np-del">この行を削除</button>
+  </div>
+</div>
+
+<div class="sheet" id="sheet-miss" role="dialog" aria-label="おしい">
+  <div class="inner"><div class="grabber"></div><button class="closex" aria-label="閉じる">✕</button><h3>おしい！</h3>
+    <p class="how" id="miss-body"></p>
+    <div class="hint on" id="miss-hint" hidden></div>
+    <div class="missbtns"><button class="btn2" id="miss-hint-btn">ヒントを見る</button><button class="btn2 accent" id="miss-retry">もう一度入力</button></div>
   </div>
 </div>
 
@@ -1372,12 +1382,15 @@ function stepResult(s, v){
     // 入力は受け取った、と分かるように：欄に入れた値を赤で見せてから、ヒントを出す
     const target = document.querySelector('#b-boxes .blank[data-blank="' + s.key + '"]');
     if(target){ target.textContent = (s.type === "choice") ? v : (s.unit === "円" ? yen(v) : (s.unit === "%" ? v + "%" : v.toLocaleString("ja-JP"))); target.className = "blank active wrong num"; }
-    const card = $("#b-step"); card.classList.remove("shake"); void card.offsetWidth; card.classList.add("shake");
-    $("#b-hint").className = "hint on"; updateCta();
-    setTimeout(() => card.scrollIntoView({behavior:"smooth", block:"center"}), 80);   // スマホではヒントが画面外なので見える位置へ
-    toast("おしい！ ヒントを見て、もう一度どうぞ");
+    updateCta();
+    const shown = (s.type === "choice") ? v : (s.unit === "円" ? yen(v) : (s.unit === "%" ? v + "%" : v.toLocaleString("ja-JP")));
+    $("#miss-body").textContent = s.n + " に「" + shown + "」と入れました。もう一度考えてみるか、ヒントを見て進みましょう。";
+    $("#miss-hint").textContent = "💡 " + s.hint; $("#miss-hint").hidden = true; $("#miss-hint-btn").hidden = false;
+    openSheet($("#sheet-miss"));
   }
 }
+$("#miss-hint-btn").addEventListener("click", () => { $("#miss-hint").hidden = false; $("#miss-hint-btn").hidden = true; $("#b-hint").className = "hint on"; });
+$("#miss-retry").addEventListener("click", () => { closeSheet(); answerB(); });
 function answerB(){
   const s = drill.steps[bi];
   if(s.type === "choice") pickChip(s.n + "：どちら？", s.options, v => stepResult(s, v));

@@ -401,11 +401,17 @@ def t_drill(ctx):
     ev(p, "document.querySelector('.blank.active').click(); __t.keys('200'); __t.press('OK')")
     assert ev(p, "bi") == 1
     ev(p, "__t.cta(); __t.keys('1'); __t.press('OK')")  # 誤答
-    assert ev(p, "document.querySelector('#b-hint').classList.contains('on')")
-    # 誤答でも「入力は届いた」と分かる：欄に入れた値が赤で残り、番は進まない
-    wrong = ev(p, "document.querySelector('#b-boxes .blank[data-blank=matEnd]')")
+    # 誤答：その場に「おしい！」シート（スクロールさせない）。ヒントは選んだ時だけ、番は進まない
+    assert ev(p, "document.querySelector('#sheet-miss').classList.contains('on')"), "不正解シートが出ない"
+    assert "STEP 2" in ev(p, "document.querySelector('#miss-body').textContent")
+    assert ev(p, "document.querySelector('#miss-hint').hidden"), "頼んでいないのにヒントが出ている"
+    ev(p, "document.querySelector('#miss-hint-btn').click()")
+    assert not ev(p, "document.querySelector('#miss-hint').hidden") and "420" in ev(p, "document.querySelector('#miss-hint').textContent")
     assert ev(p, "(() => { const b = document.querySelector('#b-boxes .blank.active'); return b.classList.contains('wrong') && b.textContent.includes('1'); })()"), "誤答の値が欄に見えない"
     assert ev(p, "bi") == 1
+    ev(p, "document.querySelector('#miss-retry').click()")
+    assert ev(p, "document.querySelector('#sheet-num').classList.contains('on')"), "「もう一度入力」でテンキーが開かない"
+    ev(p, "closeSheet()")
     ev(p, "__t.cta(); __t.keys('168000'); __t.press('OK')")
     assert ev(p, "store.get('drillpos')") == {"id": "D1", "bi": 2}
     p.reload(); p.wait_for_function("typeof PROBLEMS !== 'undefined'"); p.evaluate(HELPERS)
@@ -422,8 +428,8 @@ def t_drill(ctx):
     ev(p, "__t.cta()")
     assert ev(p, "[...document.querySelectorAll('#acct-chips .chip')].map(c => c.textContent)") == ["有利差異", "不利差異"]
     ev(p, "__t.chip('不利差異')")
-    assert ev(p, "document.querySelector('#b-hint').classList.contains('on')")
-    ev(p, "__t.cta(); __t.chip('有利差異'); __t.cta(); __t.keys('50000'); __t.press('OK'); __t.cta(); __t.chip('不利差異')")
+    assert ev(p, "document.querySelector('#sheet-miss').classList.contains('on')")
+    ev(p, "document.querySelector('#miss-retry').click(); __t.chip('有利差異'); __t.cta(); __t.keys('50000'); __t.press('OK'); __t.cta(); __t.chip('不利差異')")
     assert ev(p, "document.querySelector('#b-fb-title').textContent") == "完答！"
     ev(p, "goHome()"); p.wait_for_function("mode === 'home'")
     assert ev(p, "document.querySelectorAll('#h-collect .fig.on').length") == 2
