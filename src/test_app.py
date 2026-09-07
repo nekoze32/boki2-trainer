@@ -97,13 +97,13 @@ def wait_cta(page):
     page.wait_for_function("!document.querySelector('#cta').disabled", timeout=3000)
 
 # ---------------- テスト ----------------
-@test("起動：問題60・ドリル4・模試1・タブ5・エラーなし")
+@test("起動：問題60・ドリル4・模試2・タブ5・エラーなし")
 def t_boot(ctx):
     p = fresh_page(ctx)
     n = ev(p, "PROBLEMS.length"); d = ev(p, "DRILLS.length"); tabs = ev(p, "document.querySelectorAll('#tabbar button').length")
     assert n == 60, n
     assert d == 4, d
-    assert ev(p, "EXAMS.length") == 1
+    assert ev(p, "EXAMS.length") == 2
     assert tabs == 5, tabs
     assert ev(p, "document.querySelector('.tabpane.on').id") == "pane-today"
     assert ev(p, "document.body.classList.contains('home')")
@@ -585,6 +585,18 @@ def t_exam_score(ctx):
              submitExam(true)""")
     assert ev(p, "exResult.total") == 2, ev(p, "exResult.secs.map(s => s.got)")
     assert not p._errors, p._errors
+
+@test("模試 第2回：UI経由で全問正解＝100点、大問別も 20/20/20/28/12")
+def t_exam_m2(ctx):
+    p = fresh_page(ctx)
+    ev(p, "startExam('M2'); __t.examFill(true); submitExam(true)")
+    assert ev(p, "exResult.total") == 100, ev(p, "exResult.secs")
+    assert ev(p, "exResult.secs.map(s => s.got)") == [20, 20, 20, 28, 12]
+    assert ev(p, "examLog.M2.best") == 100
+    # 第1回とは別枠で記録される（片方を解いても他方の記録は動かない）
+    assert ev(p, "examLog.M1") is None
+    assert not p._errors, p._errors
+
 
 @test("模試：時間切れで自動提出される")
 def t_exam_timeup(ctx):
