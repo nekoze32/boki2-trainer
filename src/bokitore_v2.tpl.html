@@ -1374,7 +1374,8 @@ function stepResult(s, v){
     if(target){ target.textContent = (s.type === "choice") ? v : (s.unit === "円" ? yen(v) : (s.unit === "%" ? v + "%" : v.toLocaleString("ja-JP"))); target.className = "blank active wrong num"; }
     const card = $("#b-step"); card.classList.remove("shake"); void card.offsetWidth; card.classList.add("shake");
     $("#b-hint").className = "hint on"; updateCta();
-    toast("おしい！ 下のヒントを見て、もう一度どうぞ");
+    setTimeout(() => card.scrollIntoView({behavior:"smooth", block:"center"}), 80);   // スマホではヒントが画面外なので見える位置へ
+    toast("おしい！ ヒントを見て、もう一度どうぞ");
   }
 }
 function answerB(){
