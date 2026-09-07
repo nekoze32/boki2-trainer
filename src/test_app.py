@@ -382,14 +382,16 @@ def t_blank_hint(ctx):
 @test("長押しで文字選択・コピーの吹き出しが出ない（入力欄だけは選択できる）")
 def t_noselect(ctx):
     p = fresh_page(ctx)
-    assert ev(p, "getComputedStyle(document.body).userSelect") == "none"
+    # WebKit（Safari）は userSelect でなく webkitUserSelect に値を返すので両方見る
+    US = "(el => { const s = getComputedStyle(el); return s.userSelect || s.webkitUserSelect; })"
+    assert ev(p, f"{US}(document.body)") == "none"
     ev(p, "document.querySelector('#btn-today').click()")
     for sel in ["#q-text", "#cta", ".addline", "#tabbar", ".jline, .jstep", "#sheet-num .npk"]:
-        us = ev(p, f"(() => {{ const el = document.querySelector('{sel}'); return el ? getComputedStyle(el).userSelect : 'none'; }})()")
+        us = ev(p, f"(() => {{ const el = document.querySelector('{sel}'); return el ? {US}(el) : 'none'; }})()")
         assert us == "none", (sel, us)
     ev(p, "openSheet(document.querySelector('#sheet-calc'))")
-    assert ev(p, "getComputedStyle(document.querySelector('#memo')).userSelect") == "text", "メモ欄が選択できない"
-    assert ev(p, "getComputedStyle(document.querySelector('#set-examdate')).userSelect") == "text"
+    assert ev(p, f"{US}(document.querySelector('#memo'))") == "text", "メモ欄が選択できない"
+    assert ev(p, f"{US}(document.querySelector('#set-examdate'))") == "text"
     assert not p._errors, p._errors
 
 @test("ドリル：空欄タップで入力、誤答でヒント、選択式、途中再開、完答でコレクション")
@@ -588,7 +590,7 @@ def t_exam_clock(ctx):
     ev(p, "startExam('M1'); __t.examClock(600); exDeadline -= 30000")   # 30秒ぶん裏に回った状態を作る
     p.wait_for_function("exRemain <= 571", timeout=3000)
     assert ev(p, "exRemain") <= 571, "tick回数で数えていて、止まっていた時間が試験時間から抜けている"
-    ev(p, "goHome()")
+    ev(p, "goHome()"); p.wait_for_function("mode === 'home'")   # 「←」は履歴経由で非同期（WebKitで顕在化）
     assert ev(p, "exDeadline") == 0 and ev(p, "exTimer === null")
     assert ev(p, "savedExam().remain") <= 571, "中断時の残り時間が実時間と合っていない"
     assert not p._errors, p._errors
