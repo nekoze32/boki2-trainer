@@ -153,6 +153,8 @@
   .how{font-size:14px; margin:6px 0} ol.how{padding-left:20px} ol.how li{margin:4px 0}
   .how.small{font-size:12px; color:var(--ink-soft)}
   #pane-record .foot{margin-top:0; padding:0 0 12px}
+  .about{font-size:12px; color:var(--ink-soft); line-height:1.75; border-top:1px solid var(--line); padding-top:12px}
+  .about p{margin:0 0 8px} .about b{color:var(--ink); font-weight:700}
 
   /* drill header */
   .dhead{display:flex; align-items:center; gap:12px; padding:14px 0 10px; position:sticky; top:0; background:var(--bg); z-index:5}
@@ -506,8 +508,18 @@
         <button class="setrow link danger" id="btn-reset">学習データをリセット</button>
       </div>
       <div class="sec">
+        <h2>ご意見・不具合の報告</h2>
+        <button class="setrow link" id="btn-feedback">フォームを開く（1行でも助かります）</button>
+      </div>
+      <div class="sec">
         <h2>このアプリについて</h2>
         <div class="foot" id="h-foot"></div>
+        <div class="about">
+          <p><b>個人が作っている学習アプリのβ版です。</b>日本商工会議所および日商簿記検定とは関係がありません。公式教材ではありません。</p>
+          <p>問題・解説はすべてオリジナルで作成しており、過去問題の転載はしていません。2026年度（2022年度版の出題区分表）に準拠しています。</p>
+          <p>内容の正確性を保証するものではなく、学習の結果について責任を負いません。誤りに気づいたら上のフォームから教えてください。</p>
+          <p><b>学習の記録は、この端末のブラウザの中にだけ保存しています。</b>サーバーへ送っている情報はありません。ブラウザのデータを消したり、プライベートモードで使うと記録は消えます。端末をまたいだ引き継ぎもできません。</p>
+        </div>
       </div>
     </div>
   </section>
@@ -666,6 +678,17 @@ const TOPIC_ORDER = {
 };
 const INTERVALS = [0,1,3,7,14,30]; // box → 次回までの日数
 const APP_URL = "https://nekoze32.github.io/boki2-trainer/";
+const BUILD = "/*__BUILD__*/dev";   // 版番号（ビルド時に日付へ差し替え）
+const FEEDBACK_URL = "https://docs.google.com/forms/d/e/1FAIpQLSeKGOUbap2dbOW_HaCHLNMERJX6zg5s9f4gi2dLL4oUCL3oXw/viewform";
+const FB_DETAIL = "entry.1864441160";   // くわしく教えてください
+const FB_WHERE  = "entry.1350137674";   // どの画面・どの問題
+function openFeedback(where, detail){
+  const u = new URL(FEEDBACK_URL);
+  u.searchParams.set("usp", "pp_url");
+  u.searchParams.set(FB_WHERE, (where || "") + "（版 " + BUILD + "）");
+  if(detail) u.searchParams.set(FB_DETAIL, detail);
+  window.open(u.toString(), "_blank", "noopener");
+}
 
 /* ================= utils ================= */
 const $ = s => document.querySelector(s);
@@ -896,7 +919,7 @@ function renderHome(){
   renderExams();
   renderSettings();
   const nS = PROBLEMS.filter(p => p.cat === "商業").length, nK = PROBLEMS.filter(p => p.cat === "工業").length;
-  $("#h-foot").innerHTML = "ボキトレイン（β）— 仕訳 " + (nS + nK) + " 問（商業 " + nS + "・工業 " + nK + "）＋計算ドリル " + DRILLS.length + " 本＋総合模試 " + EXAMS.length + " 回。問題はすべてオリジナル、2026年度の出題区分に準拠。<br>正解した問題は 1→3→7→14→30日後に復習へ回ります。不正解は翌日。学習記録はこの端末にだけ保存されます。";
+  $("#h-foot").innerHTML = "ボキトレイン（β）— 仕訳 " + (nS + nK) + " 問（商業 " + nS + "・工業 " + nK + "）＋計算ドリル " + DRILLS.length + " 本＋総合模試 " + EXAMS.length + " 回。問題はすべてオリジナル、2026年度の出題区分に準拠。<br>正解した問題は 1→3→7→14→30日後に復習へ回ります。不正解は翌日。版 " + BUILD + "。学習記録はこの端末にだけ保存されます。";
   // ホーム画面追加の案内（初回セッション完了後、非インストール時、30日は再表示しない）
   const standalone = window.matchMedia("(display-mode: standalone)").matches || navigator.standalone === true;
   const dismissed = store.get("a2hs", null);
@@ -1339,11 +1362,10 @@ function nextQ(){
   renderQ();
 }
 $("#q-report").addEventListener("click", () => {
-  const p = curP(); const txt = "[ボキトレイン 問題報告] " + p.id + " " + p.topic + "\n" + p.text;
-  const done = () => toast("問題ID " + p.id + " をコピーしました。報告フォームは本実装で用意します");
-  if(navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(txt).then(done, () => toast("ID: " + p.id));
-  else toast("ID: " + p.id);
+  const p = curP();
+  openFeedback("仕訳 " + p.id + "（" + p.cat + "・" + p.topic + "）");
 });
+$("#btn-feedback").addEventListener("click", () => openFeedback("記録タブから"));
 function confetti(){
   const c = $("#r-confetti"); c.innerHTML = "";
   if(window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;

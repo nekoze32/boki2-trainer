@@ -748,6 +748,38 @@ def t_icons(ctx):
                 'name="apple-mobile-web-app-title" content="ボキトレイン"', 'rel="icon" href="favicon-32.png"']:
         assert tag in html, "index.html に " + tag + " が無い"
 
+
+@test("β公開のしたく：検索避け・免責・記録の扱い・版番号・フィードバック導線")
+def t_beta(ctx):
+    import os
+    root = os.path.abspath(os.path.join(HERE, ".."))
+    robots = open(os.path.join(root, "robots.txt"), encoding="utf-8").read()
+    assert "Allow: /" in robots and "Disallow: /" not in robots, "noindex を読ませるため巡回は許可しておく"
+    html = open(os.path.join(root, "index.html"), encoding="utf-8").read()
+    assert 'name="robots" content="noindex, nofollow"' in html, "noindex が無い"
+    p = fresh_page(ctx)
+    # 版番号：ビルド日が入っていて dev のままでない
+    import re as _re
+    assert _re.match(r"^\d{4}-\d{2}-\d{2}$", ev(p, "BUILD")), "版番号が日付でない: " + str(ev(p, "BUILD"))
+    ev(p, "document.querySelector('#tabbar button[data-tab=\"record\"]').click()")
+    about = ev(p, "document.querySelector('.about').innerText")
+    for phrase in ["日本商工会議所", "公式教材ではありません", "オリジナル", "端末", "サーバーへ送っている情報はありません"]:
+        assert phrase in about, "免責に『" + phrase + "』が無い"
+    assert ev(p, "BUILD") in ev(p, "document.querySelector('#h-foot').innerText"), "版番号が画面に出ていない"
+    # フィードバック：新しいタブでフォームが開く（問題IDと版番号つき）
+    assert ev(p, "!!document.querySelector('#btn-feedback')"), "記録タブに報告の入口が無い"
+    opened = []
+    p.context.on("page", lambda pg: opened.append(pg.url))
+    ev(p, "document.querySelector('#tabbar button[data-tab=\"today\"]').click(); document.querySelector('#btn-today').click()")
+    pid = ev(p, "curP().id")
+    ev(p, "document.querySelector('#q-report').click()")
+    p.wait_for_timeout(1200)
+    assert opened and "docs.google.com/forms" in opened[0], "報告ボタンでフォームが開かない: " + str(opened)
+    from urllib.parse import unquote
+    u = unquote(opened[0])
+    assert pid in u and ev(p, "BUILD") in u, "フォームに問題IDと版番号が渡っていない: " + u
+    assert not p._errors, p._errors
+
 # ---------------- 実行 ----------------
 def main():
     if not os.path.exists(os.path.join(HERE, "bokitore.html")):

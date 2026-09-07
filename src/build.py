@@ -248,7 +248,10 @@ dj = json.dumps(DRILLS, ensure_ascii=False, separators=(",",":"))
 ej = json.dumps(EXAMS, ensure_ascii=False, separators=(",",":"))
 for s in (pj, dj, ej):
     assert "</script" not in s.lower()
+BUILD = __import__("datetime").datetime.now().strftime("%Y-%m-%d")   # 版番号＝ビルド日
 out = tpl.replace("/*__PROBLEMS__*/[]", pj).replace("/*__DRILLS__*/[]", dj).replace("/*__EXAMS__*/[]", ej)
+out = out.replace('"/*__BUILD__*/dev"', '"%s"' % BUILD)
+assert "/*__BUILD__*/" not in out
 assert "/*__PROBLEMS__*/" not in out and "/*__DRILLS__*/" not in out and "/*__EXAMS__*/" not in out
 
 # artifact用（フラグメント）
@@ -270,7 +273,14 @@ manifest = json.dumps({
 }, ensure_ascii=False)
 with open(os.path.join(HERE, "..", "manifest.webmanifest"), "w", encoding="utf-8", newline="\n") as f:
     f.write(manifest)
-head_extra = ('<meta name="description" content="簿記2級の仕訳と原価計算を、電車で片手で。電卓とメモ常駐の演習アプリ。">\n'
+# β：URLを知っている人だけに配る間は検索避け。
+# robots.txt で巡回を止めると noindex が読まれず、外部リンク経由でURLだけ検索に載ることがある。
+# そこで「巡回は許可 → noindex を読ませて確実に除外」の組み合わせにする。
+# 一般公開に切り替えるときは、この robots.txt の生成と下の noindex 行を消す。
+with open(os.path.join(HERE, "..", "robots.txt"), "w", encoding="utf-8", newline="\n") as f:
+    f.write("# β版：検索結果には出さない（noindex を読ませるため巡回は許可）\nUser-agent: *\nAllow: /\n")
+head_extra = ('<meta name="robots" content="noindex, nofollow">\n'
+              '<meta name="description" content="簿記2級の仕訳と原価計算を、電車で片手で。電卓とメモ常駐の演習アプリ。">\n'
               '<meta property="og:title" content="ボキトレイン — 一駅一問。鉛筆も紙も出さずに、片手で簿記2級">\n'
               '<meta property="og:description" content="仕訳60問＋ボックス図で解く原価計算。下書き用紙を画面にしました。電卓とメモは常駐、復習は忘却曲線で自動。">\n'
               '<meta property="og:type" content="website">\n'
