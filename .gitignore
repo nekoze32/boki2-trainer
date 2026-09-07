@@ -2,3 +2,4 @@ __pycache__/
 src/bokitore.html
 src/bokitore_standalone.html
 _send/
+.venv/

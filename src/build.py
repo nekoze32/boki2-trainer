@@ -251,7 +251,7 @@ out = tpl.replace("/*__PROBLEMS__*/[]", pj).replace("/*__DRILLS__*/[]", dj).repl
 assert "/*__PROBLEMS__*/" not in out and "/*__DRILLS__*/" not in out and "/*__EXAMS__*/" not in out
 
 # artifact用（フラグメント）
-with open(os.path.join(HERE, "bokitore.html"), "w", encoding="utf-8") as f:
+with open(os.path.join(HERE, "bokitore.html"), "w", encoding="utf-8", newline="\n") as f:
     f.write(out)
 
 # standalone（完全なHTML文書＋PWAマニフェスト）
@@ -269,10 +269,10 @@ body = out.replace('<meta charset="utf-8">\n', '', 1)
 m = re.search(r'</style>\s*', body)
 head_part, body_part = body[:m.end()], body[m.end():]
 standalone = '<!DOCTYPE html>\n<html lang="ja">\n<head>\n<meta charset="utf-8">\n' + head_extra + head_part + '\n</head>\n<body>\n' + body_part + '\n</body>\n</html>\n'
-with open(os.path.join(HERE, "bokitore_standalone.html"), "w", encoding="utf-8") as f:
+with open(os.path.join(HERE, "bokitore_standalone.html"), "w", encoding="utf-8", newline="\n") as f:
     f.write(standalone)
 # GitHub Pages 用（リポジトリ直下の index.html）
-with open(os.path.join(HERE, "..", "index.html"), "w", encoding="utf-8") as f:
+with open(os.path.join(HERE, "..", "index.html"), "w", encoding="utf-8", newline="\n") as f:
     f.write(standalone)
 
 nS = sum(1 for p in problems if p["cat"]=="商業"); nK = len(problems)-nS

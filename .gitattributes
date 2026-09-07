@@ -1,0 +1,2 @@
+# 生成物・ソースとも改行はLFに統一（Windows/Macの往復で全行差分になるのを防ぐ）
+* text=auto eol=lf
