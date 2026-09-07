@@ -1412,12 +1412,16 @@ function stepResult(s, v){
     if(target){ target.textContent = (s.type === "choice") ? v : (s.unit === "円" ? yen(v) : (s.unit === "%" ? v + "%" : v.toLocaleString("ja-JP"))); target.className = "blank active wrong num"; }
     updateCta();
     const shown = (s.type === "choice") ? v : (s.unit === "円" ? yen(v) : (s.unit === "%" ? v + "%" : v.toLocaleString("ja-JP")));
-    $("#miss-body").textContent = s.n + " に「" + shown + "」と入れました。もう一度考えてみるか、ヒントを見て進みましょう。";
+    $("#miss-body").dataset.entered = s.n + " に「" + shown + "」と入れました。";
+    $("#miss-body").textContent = $("#miss-body").dataset.entered + " もう一度考えてみるか、ヒントを見て進みましょう。";
     $("#miss-hint").textContent = "💡 " + s.hint; $("#miss-hint").hidden = true; $("#miss-hint-btn").hidden = false;
     openSheet($("#sheet-miss"));
   }
 }
-$("#miss-hint-btn").addEventListener("click", () => { $("#miss-hint").hidden = false; $("#miss-hint-btn").hidden = true; $("#b-hint").className = "hint on"; });
+$("#miss-hint-btn").addEventListener("click", () => {
+  $("#miss-hint").hidden = false; $("#miss-hint-btn").hidden = true; $("#b-hint").className = "hint on";
+  $("#miss-body").textContent = $("#miss-body").dataset.entered + " ヒントを手がかりに、もう一度入力しましょう。";
+});
 $("#miss-retry").addEventListener("click", () => { closeSheet(); answerB(); });
 function answerB(){
   const s = drill.steps[bi];

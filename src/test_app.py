@@ -407,6 +407,8 @@ def t_drill(ctx):
     assert ev(p, "getComputedStyle(document.querySelector('#miss-hint')).display") == "none", "頼んでいないのにヒントが見えている"
     ev(p, "document.querySelector('#miss-hint-btn').click()")
     assert ev(p, "getComputedStyle(document.querySelector('#miss-hint')).display") != "none" and "420" in ev(p, "document.querySelector('#miss-hint').textContent")
+    body = ev(p, "document.querySelector('#miss-body').textContent")
+    assert "ヒントを見て進み" not in body and "もう一度入力" in body, "ヒントを出したのに『見るか考えるか』の文のまま: " + body
     assert ev(p, "(() => { const b = document.querySelector('#b-boxes .blank.active'); return b.classList.contains('wrong') && b.textContent.includes('1'); })()"), "誤答の値が欄に見えない"
     assert ev(p, "bi") == 1
     ev(p, "document.querySelector('#miss-retry').click()")
