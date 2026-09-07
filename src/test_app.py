@@ -404,9 +404,9 @@ def t_drill(ctx):
     # 誤答：その場に「おしい！」シート（スクロールさせない）。ヒントは選んだ時だけ、番は進まない
     assert ev(p, "document.querySelector('#sheet-miss').classList.contains('on')"), "不正解シートが出ない"
     assert "STEP 2" in ev(p, "document.querySelector('#miss-body').textContent")
-    assert ev(p, "document.querySelector('#miss-hint').hidden"), "頼んでいないのにヒントが出ている"
+    assert ev(p, "getComputedStyle(document.querySelector('#miss-hint')).display") == "none", "頼んでいないのにヒントが見えている"
     ev(p, "document.querySelector('#miss-hint-btn').click()")
-    assert not ev(p, "document.querySelector('#miss-hint').hidden") and "420" in ev(p, "document.querySelector('#miss-hint').textContent")
+    assert ev(p, "getComputedStyle(document.querySelector('#miss-hint')).display") != "none" and "420" in ev(p, "document.querySelector('#miss-hint').textContent")
     assert ev(p, "(() => { const b = document.querySelector('#b-boxes .blank.active'); return b.classList.contains('wrong') && b.textContent.includes('1'); })()"), "誤答の値が欄に見えない"
     assert ev(p, "bi") == 1
     ev(p, "document.querySelector('#miss-retry').click()")
