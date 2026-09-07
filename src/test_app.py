@@ -662,6 +662,24 @@ def t_exam_corrupt(ctx):
     assert ev(p, "mode") == "exam"
     assert not p._errors, p._errors
 
+
+@test("現在地：タブごとに見出しが変わり、画面遷移には方向付きの動きが付く。きょうの主ボタンが最初に見える")
+def t_wayfinding(ctx):
+    p = fresh_page(ctx)
+    assert ev(p, "document.querySelector('#h-title').textContent") == "きょう"
+    assert ev(p, "document.querySelector('#btn-today').getBoundingClientRect().top < document.querySelector('#h-journey').getBoundingClientRect().top"), "主ボタンが最初に無い"
+    ev(p, "document.querySelector('#tabbar button[data-tab=\"drills\"]').click()")
+    assert ev(p, "document.querySelector('#h-title').textContent") == "計算ドリル"
+    assert ev(p, "document.querySelector('#pane-drills').classList.contains('anim-tab')"), "タブ切替に動きが無い"
+    ev(p, "startDrill('D1')")
+    assert ev(p, "document.querySelector('#scr-drill').classList.contains('anim-push')"), "奥へ進む動きが無い"
+    assert "平均法" in ev(p, "document.querySelector('#b-title').textContent")
+    ev(p, "goHome()"); p.wait_for_function("mode === 'home'")
+    assert ev(p, "document.querySelector('#h-title').textContent") == "計算ドリル", "戻ったのに開始元のタブ見出しでない"
+    ev(p, "document.querySelector('#tabbar button[data-tab=\"today\"]').click(); document.querySelector('#btn-today').click()")
+    assert ev(p, "document.querySelector('#q-title').textContent").startswith("仕訳 · ")
+    assert not p._errors, p._errors
+
 # ---------------- 実行 ----------------
 def main():
     if not os.path.exists(os.path.join(HERE, "bokitore.html")):

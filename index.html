@@ -62,6 +62,22 @@
   #app{max-width:480px; margin:0 auto; min-height:100dvh; display:flex; flex-direction:column; padding:0 16px calc(96px + env(safe-area-inset-bottom))}
   .screen{display:none; flex-direction:column; flex:1}
   .screen.on{display:flex}
+  /* 画面遷移：奥へ進むときは右から、戻るときは左から。タブは短いフェード */
+  .screen.on.anim-push{animation:scrPush .24s cubic-bezier(.2,.7,.2,1)}
+  .screen.on.anim-pop{animation:scrPop .22s cubic-bezier(.2,.7,.2,1)}
+  @keyframes scrPush{from{opacity:0; transform:translateX(28px)} to{opacity:1; transform:none}}
+  @keyframes scrPop{from{opacity:0; transform:translateX(-22px)} to{opacity:1; transform:none}}
+  .tabpane.on.anim-tab{animation:paneIn .18s ease-out}
+  @keyframes paneIn{from{opacity:0; transform:translateY(6px)} to{opacity:1; transform:none}}
+  @media (prefers-reduced-motion: reduce){ .screen.on.anim-push,.screen.on.anim-pop,.tabpane.on.anim-tab{animation:none} }
+  .dtitle{font-size:12px; color:var(--ink-soft); font-weight:500; flex:none; max-width:40%; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; letter-spacing:.02em}
+  .today .go{height:54px; font-size:17px; margin-top:8px}
+  .today .sub{margin-top:10px; font-size:12px; opacity:.85; text-align:center}
+  .more{margin-top:14px; display:flex; flex-direction:column; gap:8px}
+  .more .teaser{margin:0; padding:10px 14px; box-shadow:none}
+  .more .teaser b{font-size:13px; font-weight:500}
+  .more .teaser.drillnext{background:var(--surface); border:1px solid var(--line)}
+  .more .teaser.drillnext .tg{color:var(--accent)} .more .teaser.drillnext .arr{color:var(--ink-soft); font-weight:500}
 
   /* home */
   .brand{display:flex; align-items:flex-end; justify-content:space-between; padding:18px 4px 4px}
@@ -422,27 +438,25 @@
   <section class="screen on" id="scr-home">
     <div class="brand">
       <div>
-        <div class="eyebrow">簿記2級 · 一駅一問</div>
-        <h1>ボキトレイン</h1>
+        <div class="eyebrow">ボキトレイン · 簿記2級</div>
+        <h1 id="h-title">きょう</h1>
       </div>
     </div>
 
     <div class="tabpane on" id="pane-today">
-      <div class="jhead">合格までの道のり</div>
-      <div class="journey" id="h-journey"></div>
       <div class="today">
-        <div class="t">きょう</div>
-        <div class="row">
-          <div><div class="v num" id="h-due">0</div><div class="k">復習待ち</div></div>
-          <div><div class="v num" id="h-new">0</div><div class="k">新規</div></div>
-          <div><div class="v num" id="h-today">0</div><div class="k">きょう答えた</div></div>
-        </div>
+        <div class="t">まずはここから</div>
         <button class="go" id="btn-today">きょうの学習を始める</button>
         <button class="go resume" id="btn-resume" hidden>前回の続きから</button>
+        <div class="sub num">復習待ち <span id="h-due">0</span> · 新規 <span id="h-new">0</span> · きょう答えた <span id="h-today">0</span></div>
       </div>
-      <button class="teaser" id="h-teaser-map"><span class="tg">論点</span><b id="h-teaser-map-t"></b><span class="arr">→</span></button>
-      <button class="teaser drillnext" id="h-next-drill"><span class="tg">下書き用紙を、画面に</span><b id="h-next-drill-t"></b><span class="arr" id="h-next-drill-a">始める →</span></button>
-      <button class="teaser" id="h-teaser-week"><span class="tg">今週</span><b id="h-teaser-week-t"></b><span class="arr">→</span></button>
+      <div class="jhead">合格までの道のり</div>
+      <div class="journey" id="h-journey"></div>
+      <div class="more">
+        <button class="teaser drillnext" id="h-next-drill"><span class="tg">ドリル</span><b id="h-next-drill-t"></b><span class="arr" id="h-next-drill-a">→</span></button>
+        <button class="teaser" id="h-teaser-map"><span class="tg">論点</span><b id="h-teaser-map-t"></b><span class="arr">→</span></button>
+        <button class="teaser" id="h-teaser-week"><span class="tg">今週</span><b id="h-teaser-week-t"></b><span class="arr">→</span></button>
+      </div>
       <div class="a2hs" id="a2hs" hidden><span>電車ですぐ1問。ホーム画面に追加できます</span><button id="a2hs-how">方法</button><button id="a2hs-no" aria-label="閉じる">✕</button></div>
     </div>
 
@@ -502,6 +516,7 @@
   <section class="screen" id="scr-quiz">
     <div class="dhead">
       <button class="backbtn" data-home aria-label="ホームへ戻る">←</button>
+      <div class="dtitle" id="q-title">仕訳</div>
       <div class="route" id="q-route" aria-label="路線の進行"></div>
       <div class="pcount num" id="q-count"></div>
     </div>
@@ -528,7 +543,7 @@
   </section>
 
   <section class="screen" id="scr-result">
-    <div class="dhead"><button class="backbtn" data-home aria-label="ホームへ戻る">←</button></div>
+    <div class="dhead"><button class="backbtn" data-home aria-label="ホームへ戻る">←</button><div class="dtitle">結果</div></div>
     <div class="arrive">
       <div class="tag">終点到着</div>
       <h2 id="r-title"></h2>
@@ -565,6 +580,7 @@
   <section class="screen" id="scr-drill">
     <div class="dhead">
       <button class="backbtn" data-home aria-label="ホームへ戻る">←</button>
+      <div class="dtitle" id="b-title">ドリル</div>
       <div class="pbar"><div id="b-prog" style="width:0%"></div></div>
       <div class="pcount num" id="b-count"></div>
     </div>
@@ -728,9 +744,11 @@ function show(name, opt){
   if(!opt.fromPop && name !== "home"){
     try{ if(opt.replace) history.replaceState({v:name}, ""); else history.pushState({v:name}, ""); }catch(e){}
   }
+  const dir = name === "home" ? "anim-pop" : "anim-push";
   mode = name;
-  document.querySelectorAll(".screen").forEach(s => s.classList.remove("on"));
-  $("#scr-"+name).classList.add("on");
+  document.querySelectorAll(".screen").forEach(s => { s.classList.remove("on", "anim-push", "anim-pop"); });
+  const scr = $("#scr-"+name); scr.classList.add("on", dir);
+  scr.addEventListener("animationend", () => scr.classList.remove(dir), {once:true});
   window.scrollTo(0,0);
   updateCta();
   document.body.classList.toggle("home", name === "home");
@@ -756,9 +774,16 @@ document.querySelectorAll("[data-home]").forEach(b => b.addEventListener("click"
 
 /* ================= home tabs ================= */
 let tab = "today";
+const TAB_TITLES = {today:"きょう", map:"論点マップ", drills:"計算ドリル", exam:"模試", record:"記録"};
 function setTab(name){
+  const changed = tab !== name;
   tab = name;
-  document.querySelectorAll(".tabpane").forEach(p => p.classList.toggle("on", p.id === "pane-" + tab));
+  $("#h-title").textContent = TAB_TITLES[tab] || "ボキトレイン";
+  document.querySelectorAll(".tabpane").forEach(p => {
+    const on = p.id === "pane-" + tab;
+    p.classList.toggle("on", on); p.classList.remove("anim-tab");
+    if(on && changed){ void p.offsetWidth; p.classList.add("anim-tab"); p.addEventListener("animationend", () => p.classList.remove("anim-tab"), {once:true}); }
+  });
   document.querySelectorAll("#tabbar button").forEach(b => b.classList.toggle("sel", b.dataset.tab === tab));
   window.scrollTo(0,0);
 }
@@ -844,9 +869,9 @@ function renderHome(){
   // ドリル：次の1本と図コレクション
   const nd = nextDrill(), dp = drillPos();
   const nDone = DRILLS.filter(d => drillDone[d.id]).length;
-  if(dp){ const dd = DRILLS.find(d => d.id === dp.id); $("#h-next-drill-t").textContent = "続き " + dd.title + "（" + (dp.bi + 1) + "/" + dd.steps.length + "）"; $("#h-next-drill-a").textContent = "続ける →"; }
-  else if(nd){ $("#h-next-drill-t").textContent = "次は " + nd.title; $("#h-next-drill-a").textContent = "始める →"; }
-  else { $("#h-next-drill-t").textContent = "4つの計算図、全部そろいました"; $("#h-next-drill-a").textContent = "もう一度 →"; }
+  if(dp){ const dd = DRILLS.find(d => d.id === dp.id); $("#h-next-drill-t").textContent = "続き " + dd.title + "（" + (dp.bi + 1) + "/" + dd.steps.length + "）"; $("#h-next-drill-a").textContent = "→"; }
+  else if(nd){ $("#h-next-drill-t").textContent = "次は " + nd.title; $("#h-next-drill-a").textContent = "→"; }
+  else { $("#h-next-drill-t").textContent = "4つの計算図、全部そろいました"; $("#h-next-drill-a").textContent = "→"; }
   const col = $("#h-collect");
   col.className = "collect" + (nDone === DRILLS.length ? " all" : "");
   const icons = {D1:"▦", D2:"▤", D3:"◫", D4:"◩"};
@@ -1181,6 +1206,7 @@ function renderQ(){
   const p = curP();
   answered = false; entry = {debit:[], credit:[]};
   $("#q-cat").textContent = p.cat + "簿記 · " + p.topic;
+  $("#q-title").textContent = "仕訳 · " + p.topic;
   $("#q-lv").textContent = "●".repeat(p.level || 1) + "○".repeat(3 - (p.level || 1));
   const r = progress[p.id];
   $("#q-rev").textContent = retried.has(p.id) ? "再挑戦" : (r && r.seen ? "復習" : "");
@@ -1352,6 +1378,7 @@ function drillPos(){
 function startDrill(id){
   drill = DRILLS.find(d => d.id === id); bi = 0; bDone = false;
   $("#b-cat").textContent = drill.tag + " · " + drill.title;
+  $("#b-title").textContent = "ドリル · " + drill.title.replace(/^.*・/, "");
   $("#b-text").innerHTML = drill.text;
   $("#b-boxes").innerHTML = drill.boxes;
   $("#b-fb").className = "fb"; $("#b-hint").className = "hint"; $("#b-step").style.display = "";
