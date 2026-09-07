@@ -402,6 +402,10 @@ def t_drill(ctx):
     assert ev(p, "bi") == 1
     ev(p, "__t.cta(); __t.keys('1'); __t.press('OK')")  # 誤答
     assert ev(p, "document.querySelector('#b-hint').classList.contains('on')")
+    # 誤答でも「入力は届いた」と分かる：欄に入れた値が赤で残り、番は進まない
+    wrong = ev(p, "document.querySelector('#b-boxes .blank[data-blank=matEnd]')")
+    assert ev(p, "(() => { const b = document.querySelector('#b-boxes .blank.active'); return b.classList.contains('wrong') && b.textContent.includes('1'); })()"), "誤答の値が欄に見えない"
+    assert ev(p, "bi") == 1
     ev(p, "__t.cta(); __t.keys('168000'); __t.press('OK')")
     assert ev(p, "store.get('drillpos')") == {"id": "D1", "bi": 2}
     p.reload(); p.wait_for_function("typeof PROBLEMS !== 'undefined'"); p.evaluate(HELPERS)
