@@ -256,15 +256,34 @@ with open(os.path.join(HERE, "bokitore.html"), "w", encoding="utf-8", newline="\
     f.write(out)
 
 # standalone（完全なHTML文書＋PWAマニフェスト）
-manifest = json.dumps({"name":"ボキトレイン","short_name":"ボキトレイン","start_url":".","display":"standalone","background_color":"#F6F7F4","theme_color":"#0E7A5F","lang":"ja"}, ensure_ascii=False)
-import urllib.parse
+# アイコンは src/icon.svg から make_icons.py で書き出したものを参照する（リポジトリ直下に置く）
+manifest = json.dumps({
+    "name": "ボキトレイン", "short_name": "ボキトレイン",
+    "description": "一駅一問。鉛筆も紙も出さずに、片手で簿記2級。",
+    "start_url": ".", "scope": ".", "display": "standalone", "orientation": "portrait",
+    "background_color": "#0E7A5F", "theme_color": "#0E7A5F", "lang": "ja",
+    "icons": [
+        {"src": "icon-192.png", "sizes": "192x192", "type": "image/png"},
+        {"src": "icon-512.png", "sizes": "512x512", "type": "image/png"},
+        {"src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable"},
+    ],
+}, ensure_ascii=False)
+with open(os.path.join(HERE, "..", "manifest.webmanifest"), "w", encoding="utf-8", newline="\n") as f:
+    f.write(manifest)
 head_extra = ('<meta name="description" content="簿記2級の仕訳と原価計算を、電車で片手で。電卓とメモ常駐の演習アプリ。">\n'
               '<meta property="og:title" content="ボキトレイン — 一駅一問。鉛筆も紙も出さずに、片手で簿記2級">\n'
               '<meta property="og:description" content="仕訳60問＋ボックス図で解く原価計算。下書き用紙を画面にしました。電卓とメモは常駐、復習は忘却曲線で自動。">\n'
               '<meta property="og:type" content="website">\n'
               '<meta property="og:url" content="https://nekoze32.github.io/boki2-trainer/">\n'
+              '<meta property="og:image" content="https://nekoze32.github.io/boki2-trainer/icon-512.png">\n'
               '<meta name="twitter:card" content="summary">\n'
-              '<link rel="manifest" href="data:application/manifest+json,%s">\n' % urllib.parse.quote(manifest))
+              '<link rel="manifest" href="manifest.webmanifest">\n'
+              '<link rel="icon" href="favicon-32.png" sizes="32x32">\n'
+              '<link rel="icon" href="favicon-16.png" sizes="16x16">\n'
+              '<link rel="apple-touch-icon" href="apple-touch-icon.png">\n'
+              '<meta name="apple-mobile-web-app-capable" content="yes">\n'
+              '<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">\n'
+              '<meta name="apple-mobile-web-app-title" content="ボキトレイン">\n')
 body = out.replace('<meta charset="utf-8">\n', '', 1)
 # <title>〜<link ...> までを head、それ以降を body に分ける
 m = re.search(r'</style>\s*', body)

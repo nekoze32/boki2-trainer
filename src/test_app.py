@@ -16,14 +16,22 @@ PORT = 8765
 # ---------------- ローカル配信 ----------------
 class Quiet(http.server.SimpleHTTPRequestHandler):
     def log_message(self, *a): pass
+URL = ""   # serve() が実際のポートで設定する
+
 def serve():
+    global URL
     handler = functools.partial(Quiet, directory=HERE)
     socketserver.TCPServer.allow_reuse_address = True
-    httpd = socketserver.TCPServer(("127.0.0.1", PORT), handler)
+    httpd = None
+    for port in [PORT] + list(range(PORT + 1, PORT + 40)) + [0]:   # 使用中・OS予約のポートは避けて空きを探す
+        try:
+            httpd = socketserver.TCPServer(("127.0.0.1", port), handler); break
+        except OSError:
+            continue
+    if httpd is None: raise RuntimeError("空きポートが見つかりません")
+    URL = "http://127.0.0.1:%d/bokitore.html" % httpd.server_address[1]
     threading.Thread(target=httpd.serve_forever, daemon=True).start()
     return httpd
-
-URL = f"http://127.0.0.1:{PORT}/bokitore.html"
 results = []
 
 def test(name):
@@ -720,6 +728,25 @@ def t_exam_m3(ctx):
              submitExam(true)""")
     assert ev(p, "exResult.secs[0].got") == 4, "二段階仕訳の別解が採点で落ちる"
     assert not p._errors, p._errors
+
+
+@test("アイコンとマニフェスト：アイコン一式が揃い、iOS/Androidの追加に必要なタグがある")
+def t_icons(ctx):
+    import os, json
+    root = os.path.abspath(os.path.join(HERE, ".."))
+    for n, least in [("icon-512.png", 20000), ("icon-192.png", 3000), ("apple-touch-icon.png", 3000),
+                     ("favicon-32.png", 300), ("favicon-16.png", 100), ("manifest.webmanifest", 200)]:
+        p = os.path.join(root, n)
+        assert os.path.exists(p), n + " が無い"
+        assert os.path.getsize(p) >= least, n + " が小さすぎる（生成に失敗している）"
+    mf = json.load(open(os.path.join(root, "manifest.webmanifest"), encoding="utf-8"))
+    assert mf["name"] == "ボキトレイン" and mf["display"] == "standalone"
+    assert {i["sizes"] for i in mf["icons"]} == {"192x192", "512x512"}
+    assert any(i.get("purpose") == "maskable" for i in mf["icons"]), "maskable アイコンが無い（Androidで白枠になる）"
+    html = open(os.path.join(root, "index.html"), encoding="utf-8").read()
+    for tag in ['rel="manifest" href="manifest.webmanifest"', 'rel="apple-touch-icon" href="apple-touch-icon.png"',
+                'name="apple-mobile-web-app-title" content="ボキトレイン"', 'rel="icon" href="favicon-32.png"']:
+        assert tag in html, "index.html に " + tag + " が無い"
 
 # ---------------- 実行 ----------------
 def main():
