@@ -670,7 +670,10 @@ def t_wayfinding(ctx):
     p = fresh_page(ctx)
     assert ev(p, "document.querySelector('#h-title').textContent") == "きょう"
     assert ev(p, "document.querySelector('#btn-today').getBoundingClientRect().top < document.querySelector('#h-journey').getBoundingClientRect().top"), "主ボタンが最初に無い"
-    assert "ためらわず" in ev(p, "document.querySelector('#h-coach').textContent")
+    assert ev(p, "TIPS.includes(document.querySelector('#h-coach-t').textContent)"), "掲示板にTipsが出ていない"
+    before = ev(p, "document.querySelector('#h-coach-t').textContent")
+    ev(p, "document.querySelector('#h-coach').click()")
+    assert ev(p, "document.querySelector('#h-coach-t').textContent") != before, "タップで次のTipsに切り替わらない"
     ev(p, "document.querySelector('#tabbar button[data-tab=\"drills\"]').click()")
     assert ev(p, "document.querySelector('#h-title').textContent") == "計算ドリル"
     assert ev(p, "document.querySelector('#pane-drills').classList.contains('anim-tab')"), "タブ切替に動きが無い"

@@ -63,7 +63,16 @@
   .dtitle{font-size:12px; color:var(--ink-soft); font-weight:500; flex:none; max-width:40%; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; letter-spacing:.02em}
   .today .go{height:54px; font-size:17px; margin-top:8px}
   .today .sub{margin-top:10px; font-size:12px; opacity:.85; text-align:center}
-  .coach{margin:10px 6px 0; font-size:12.5px; color:var(--ink-soft); line-height:1.6}
+  /* 電光掲示板：一度に1行だけ、時間で入れ替わる（ゲームのロード画面のTips方式） */
+  .led{margin-top:10px; height:36px; border-radius:8px; background:#151a17; color:#FFB43A; display:flex; align-items:center; gap:10px; padding:0 12px; overflow:hidden; font-family:"IBM Plex Mono","Zen Kaku Gothic New",monospace; font-size:12.5px; letter-spacing:.04em; box-shadow:inset 0 0 0 1px #2a302c; cursor:pointer}
+  .leddot{width:6px; height:6px; border-radius:99px; background:#FFB43A; box-shadow:0 0 6px #FFB43A; flex:none; animation:ledblink 1.6s infinite}
+  @keyframes ledblink{0%,100%{opacity:1} 50%{opacity:.25}}
+  .ledtxt{white-space:nowrap; display:inline-block; will-change:transform}
+  .ledtxt.scroll{animation:ledscroll var(--led-dur, 14s) linear infinite}
+  @keyframes ledscroll{from{transform:translateX(100%)} to{transform:translateX(-100%)}}
+  .ledtxt.swap{animation:ledswap .35s ease-out}
+  @keyframes ledswap{from{opacity:0; transform:translateY(6px)} to{opacity:1; transform:none}}
+  @media (prefers-reduced-motion: reduce){ .ledtxt.scroll{animation:none; white-space:normal; font-size:11px; line-height:1.3} .leddot{animation:none} }
   .more{margin-top:14px; display:flex; flex-direction:column; gap:8px}
   .more .teaser{margin:0; padding:10px 14px; box-shadow:none}
   .more .teaser b{font-size:13px; font-weight:500}
@@ -438,7 +447,7 @@
         <button class="go resume" id="btn-resume" hidden>前回の続きから</button>
         <div class="sub num">復習待ち <span id="h-due">0</span> · 新規 <span id="h-new">0</span> · きょう答えた <span id="h-today">0</span></div>
       </div>
-      <p class="coach" id="h-coach">💡 ヒントや答えは、ためらわず見てOK。まずは解き方を体に染み込ませるのが近道です。</p>
+      <div class="led" id="h-coach" aria-live="polite" title="タップで次のTips"><span class="leddot"></span><span class="ledtxt" id="h-coach-t"></span></div>
       <div class="jhead">合格までの道のり</div>
       <div class="journey" id="h-journey"></div>
       <div class="more">
@@ -894,6 +903,34 @@ function renderHome(){
   setTab(tab);
 }
 $("#btn-today").addEventListener("click", () => startSession("today"));
+
+/* ================= 電光掲示板 Tips ================= */
+const TIPS = [
+  "ヒントや答えは、ためらわず見てOK。まずは解き方を体に染み込ませるのが近道です",
+  "一駅一問。3問だけでも毎日触ると、復習が勝手に回り始めます",
+  "ボックス図は「合計 − 月末 ＝ 完成品」。差引で出すのが最短ルート",
+  "仕訳で迷ったら、まず「増えたのは資産？費用？」を決めてから科目を選ぶ",
+  "不正解は翌日にもう一度出ます。今日は間違えて大丈夫",
+  "テンキーは左から順に計算します。＝を押さなくても OK で確定",
+  "論点マップの未踏を1つ踏むごとに、路線が1駅ずつ開通します",
+  "模試は本番と同じ90分。1回通すだけで時間配分の感覚がつきます",
+  "本番のネット試験は「画面で読んで画面で書く」。ここでの練習がそのまま本番対策",
+  "標準原価の差異は「価格差異は実際数量、数量差異は標準単価」。混ぜなければ間違えない",
+];
+let tipIdx = (new Date().getDate() + new Date().getHours()) % TIPS.length, tipTimer = null;
+function showTip(next){
+  const el = $("#h-coach-t"); if(!el) return;
+  if(next) tipIdx = (tipIdx + 1) % TIPS.length;
+  el.className = "ledtxt"; void el.offsetWidth;
+  el.textContent = TIPS[tipIdx];
+  const box = $("#h-coach");
+  const over = el.scrollWidth > box.clientWidth - 30;
+  el.classList.add(over ? "scroll" : "swap");
+  if(over) el.style.setProperty("--led-dur", Math.max(10, Math.round(el.scrollWidth / 45)) + "s");
+}
+$("#h-coach").addEventListener("click", () => showTip(true));
+function startTips(){ clearInterval(tipTimer); showTip(false); tipTimer = setInterval(() => { if(mode === "home" && tab === "today") showTip(true); }, 12000); }
+startTips();
 $("#btn-resume").addEventListener("click", resumeSession);
 $("#h-next-drill").addEventListener("click", () => { const dp = drillPos(); const nd = nextDrill(); startDrill(dp ? dp.id : (nd ? nd.id : DRILLS[0].id)); });
 $("#btn-next-topic").addEventListener("click", () => {
