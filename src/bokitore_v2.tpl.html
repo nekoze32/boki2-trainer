@@ -63,6 +63,7 @@
   .dtitle{font-size:12px; color:var(--ink-soft); font-weight:500; flex:none; max-width:40%; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; letter-spacing:.02em}
   .today .go{height:54px; font-size:17px; margin-top:8px}
   .today .sub{margin-top:10px; font-size:12px; opacity:.85; text-align:center}
+  .coach{margin:10px 6px 0; font-size:12.5px; color:var(--ink-soft); line-height:1.6}
   .more{margin-top:14px; display:flex; flex-direction:column; gap:8px}
   .more .teaser{margin:0; padding:10px 14px; box-shadow:none}
   .more .teaser b{font-size:13px; font-weight:500}
@@ -437,6 +438,7 @@
         <button class="go resume" id="btn-resume" hidden>前回の続きから</button>
         <div class="sub num">復習待ち <span id="h-due">0</span> · 新規 <span id="h-new">0</span> · きょう答えた <span id="h-today">0</span></div>
       </div>
+      <p class="coach" id="h-coach">💡 ヒントや答えは、ためらわず見てOK。まずは解き方を体に染み込ませるのが近道です。</p>
       <div class="jhead">合格までの道のり</div>
       <div class="journey" id="h-journey"></div>
       <div class="more">
