@@ -209,15 +209,16 @@ for ex in EXAMS:
         for bi, b in enumerate(sec["blocks"]):
             btag = "%s ブロック%d" % (stag, bi+1)
             if b["kind"] == "je":
-                d = sum(m for _, m in b["debit"]); c = sum(m for _, m in b["credit"])
-                if d != c: eerrs.append("%s 貸借不一致 %d/%d" % (btag, d, c))
-                for side in ("debit","credit"):
-                    names = [a for a, _ in b[side]]
-                    if len(set(names)) != len(names): eerrs.append(btag + " 同側の科目重複")
-                    if len(names) > b["rows"]: eerrs.append(btag + " 行数不足")
-                    for a, m in b[side]:
-                        if a not in b["cands"]: eerrs.append("%s candsに%sが無い" % (btag, a))
-                        if not (isinstance(m, int) and m > 0): eerrs.append(btag + " 金額")
+                for ans in [b] + b.get("alts", []):   # 別解も同じ検査
+                    d = sum(m for _, m in ans["debit"]); c = sum(m for _, m in ans["credit"])
+                    if d != c: eerrs.append("%s 貸借不一致 %d/%d" % (btag, d, c))
+                    for side in ("debit","credit"):
+                        names = [a for a, _ in ans[side]]
+                        if len(set(names)) != len(names): eerrs.append(btag + " 同側の科目重複")
+                        if len(names) > b["rows"]: eerrs.append(btag + " 行数不足")
+                        for a, m in ans[side]:
+                            if a not in b["cands"]: eerrs.append("%s candsに%sが無い" % (btag, a))
+                            if not (isinstance(m, int) and m > 0): eerrs.append(btag + " 金額")
                 if len(set(b["cands"])) != len(b["cands"]): eerrs.append(btag + " cands重複")
             elif b["kind"] == "sheet":
                 fsum = sum(f["pt"] for f in b["fields"])

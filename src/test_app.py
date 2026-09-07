@@ -97,13 +97,13 @@ def wait_cta(page):
     page.wait_for_function("!document.querySelector('#cta').disabled", timeout=3000)
 
 # ---------------- テスト ----------------
-@test("起動：問題60・ドリル4・模試2・タブ5・エラーなし")
+@test("起動：問題60・ドリル4・模試3・タブ5・エラーなし")
 def t_boot(ctx):
     p = fresh_page(ctx)
     n = ev(p, "PROBLEMS.length"); d = ev(p, "DRILLS.length"); tabs = ev(p, "document.querySelectorAll('#tabbar button').length")
     assert n == 60, n
     assert d == 4, d
-    assert ev(p, "EXAMS.length") == 2
+    assert ev(p, "EXAMS.length") == 3
     assert tabs == 5, tabs
     assert ev(p, "document.querySelector('.tabpane.on').id") == "pane-today"
     assert ev(p, "document.body.classList.contains('home')")
@@ -696,6 +696,29 @@ def t_wayfinding(ctx):
     assert ev(p, "document.querySelector('#h-title').textContent") == "計算ドリル", "戻ったのに開始元のタブ見出しでない"
     ev(p, "document.querySelector('#tabbar button[data-tab=\"today\"]').click(); document.querySelector('#btn-today').click()")
     assert ev(p, "document.querySelector('#q-title').textContent").startswith("仕訳 · ")
+    assert not p._errors, p._errors
+
+
+@test("模試 第3回：UI経由で全問正解＝100点、大問別も 20/20/20/28/12、白紙は0点")
+def t_exam_m3(ctx):
+    p = fresh_page(ctx)
+    ev(p, "startExam('M3'); __t.examFill(true); submitExam(true)")
+    assert ev(p, "exResult.total") == 100, ev(p, "exResult.secs")
+    assert ev(p, "exResult.secs.map(s => s.got)") == [20, 20, 20, 28, 12]
+    assert ev(p, "examLog.M3.best") == 100
+    assert ev(p, "examLog.M1") is None and ev(p, "examLog.M2") is None
+    ev(p, "goHome()"); p.wait_for_function("mode === 'home'")
+    ev(p, "startExam('M3', true); submitExam(true)")
+    assert ev(p, "exResult.total") == 0
+    # 別解（第1問(4) 除却の二段階仕訳）でも4点
+    ev(p, "goHome()"); p.wait_for_function("mode === 'home'")
+    ev(p, """startExam('M3', true);
+             const P = blockPrefix(0, 3);
+             exAns[P+'_d0a']='減価償却費'; exAns[P+'_d0m']=33600; exAns[P+'_d1a']='備品減価償却累計額'; exAns[P+'_d1m']=897600;
+             exAns[P+'_d2a']='貯蔵品'; exAns[P+'_d2m']=50000; exAns[P+'_d3a']='固定資産除却損'; exAns[P+'_d3m']=252400;
+             exAns[P+'_c0a']='備品減価償却累計額'; exAns[P+'_c0m']=33600; exAns[P+'_c1a']='備品'; exAns[P+'_c1m']=1200000;
+             submitExam(true)""")
+    assert ev(p, "exResult.secs[0].got") == 4, "二段階仕訳の別解が採点で落ちる"
     assert not p._errors, p._errors
 
 # ---------------- 実行 ----------------

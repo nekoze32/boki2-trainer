@@ -1681,7 +1681,8 @@ function gradeExam(){
     sec.blocks.forEach((b, bi) => {
       const P = blockPrefix(si, bi);
       if(b.kind === "je"){
-        const L = jeLines(P, b), ok = !L.bad && sideEq(L.d, b.debit) && sideEq(L.c, b.credit);
+        const L = jeLines(P, b);
+        const ok = !L.bad && [b].concat(b.alts || []).some(a => sideEq(L.d, a.debit) && sideEq(L.c, a.credit));   // 別解（二段階仕訳など）も正解
         if(ok) got += b.pt;
         blocks.push({kind:"je", ok, pt:b.pt, earned: ok ? b.pt : 0, mine:L, b});
       } else {
