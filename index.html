@@ -180,8 +180,8 @@
   .closex{position:absolute; right:8px; top:4px; width:44px; height:44px; border-radius:10px; background:var(--surface2); font-size:16px; display:grid; place-items:center}
   .sheet{outline:none}
   .sheet .inner{position:relative}
-  #toast{position:fixed; left:50%; bottom:calc(84px + env(safe-area-inset-bottom)); transform:translateX(-50%) translateY(20px); background:var(--ink); color:var(--bg); padding:10px 16px; border-radius:12px; font-size:13px; opacity:0; pointer-events:none; transition:.25s; z-index:40; max-width:90vw; text-align:center}
-  #toast.on{opacity:1; transform:translateX(-50%) translateY(0)}
+  #toast{position:fixed; left:16px; right:16px; margin:0 auto; max-width:448px; bottom:calc(84px + env(safe-area-inset-bottom)); transform:translateY(20px); background:var(--ink); color:var(--bg); padding:12px 16px; border-radius:12px; font-size:14px; line-height:1.5; opacity:0; pointer-events:none; transition:.25s; z-index:40; text-align:center}
+  #toast.on{opacity:1; transform:translateY(0)}
 
   /* result */
   .donecard{background:var(--surface); border:1px solid var(--line); border-radius:20px; padding:24px 22px; text-align:center; margin-top:16px; box-shadow:var(--shadow)}
