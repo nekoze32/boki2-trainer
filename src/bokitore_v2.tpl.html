@@ -69,7 +69,7 @@
   @keyframes ledblink{0%,100%{opacity:1} 50%{opacity:.25}}
   .ledtxt{white-space:nowrap; display:inline-block; will-change:transform}
   .ledtxt.scroll{animation:ledscroll var(--led-dur, 14s) linear infinite}
-  @keyframes ledscroll{from{transform:translateX(100%)} to{transform:translateX(-100%)}}
+  @keyframes ledscroll{0%,18%{transform:translateX(0)} 100%{transform:translateX(-100%)}}   /* まず静止で読ませてから左へ流す */
   .ledtxt.swap{animation:ledswap .35s ease-out}
   @keyframes ledswap{from{opacity:0; transform:translateY(6px)} to{opacity:1; transform:none}}
   @media (prefers-reduced-motion: reduce){ .ledtxt.scroll{animation:none; white-space:normal; font-size:11px; line-height:1.3} .leddot{animation:none} }
@@ -926,7 +926,7 @@ function showTip(next){
   const box = $("#h-coach");
   const over = el.scrollWidth > box.clientWidth - 30;
   el.classList.add(over ? "scroll" : "swap");
-  if(over) el.style.setProperty("--led-dur", Math.max(10, Math.round(el.scrollWidth / 45)) + "s");
+  if(over) el.style.setProperty("--led-dur", Math.max(12, Math.round(el.scrollWidth / 40) + 3) + "s");
 }
 $("#h-coach").addEventListener("click", () => showTip(true));
 function startTips(){ clearInterval(tipTimer); showTip(false); tipTimer = setInterval(() => { if(mode === "home" && tab === "today") showTip(true); }, 12000); }
