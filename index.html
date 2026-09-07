@@ -253,7 +253,7 @@
   .blank{display:inline-block; min-width:88px; border-bottom:2px solid var(--accent); text-align:right; padding:1px 4px; border-radius:4px 4px 0 0}
   .blank.active{background:var(--accent-soft)}
   .blank.done{border-color:var(--ok-line); color:var(--ok-ink)}
-  .blank.wrong{border-color:var(--ng-ink); color:var(--ng-ink); text-decoration:line-through; background:var(--ng-bg)}
+  .blank.wrong{border-color:var(--warn); color:var(--warn); background:transparent}
   .stepcard{background:var(--surface); border:1px solid var(--line); border-radius:16px; padding:14px 16px; margin-top:12px; box-shadow:var(--shadow)}
   .stepcard .sn{font-size:11px; font-weight:700; letter-spacing:.12em; color:var(--accent)}
   .stepcard p{margin:4px 0 0; font-size:14px}
@@ -1359,7 +1359,7 @@ function renderB(){
   $("#b-prog").style.width = (bi / drill.steps.length * 100) + "%";
   $("#b-count").textContent = (bi+1) + "/" + drill.steps.length;
   $("#b-step-n").textContent = s.n; $("#b-step-q").textContent = s.q;
-  $("#b-hint").className = "hint"; $("#b-hint").textContent = "ヒント：" + s.hint;
+  $("#b-hint").className = "hint"; $("#b-hint").textContent = "💡 " + s.hint;
   document.querySelectorAll("#b-boxes .blank").forEach(b => b.classList.remove("active"));
   const target = document.querySelector('#b-boxes .blank[data-blank="' + s.key + '"]');
   if(target) target.classList.add("active");
@@ -1387,7 +1387,7 @@ function stepResult(s, v){
     if(target){ target.textContent = (s.type === "choice") ? v : (s.unit === "円" ? yen(v) : (s.unit === "%" ? v + "%" : v.toLocaleString("ja-JP"))); target.className = "blank active wrong num"; }
     const card = $("#b-step"); card.classList.remove("shake"); void card.offsetWidth; card.classList.add("shake");
     $("#b-hint").className = "hint on"; updateCta();
-    toast("違います。ヒントを見て、もう一度この欄に入力してください");
+    toast("おしい！ 下のヒントを見て、もう一度どうぞ");
   }
 }
 function answerB(){
