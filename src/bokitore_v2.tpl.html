@@ -67,6 +67,7 @@
   .led{margin-top:10px; height:36px; border-radius:8px; background:#151a17; color:#FFB43A; display:flex; align-items:center; gap:10px; padding:0 12px; overflow:hidden; font-family:"IBM Plex Mono","Zen Kaku Gothic New",monospace; font-size:12.5px; letter-spacing:.04em; box-shadow:inset 0 0 0 1px #2a302c; cursor:pointer}
   .leddot{width:6px; height:6px; border-radius:99px; background:#FFB43A; box-shadow:0 0 6px #FFB43A; flex:none; animation:ledblink 1.6s infinite}
   @keyframes ledblink{0%,100%{opacity:1} 50%{opacity:.25}}
+  .ledwin{flex:1; min-width:0; overflow:hidden; display:block}   /* 文字はこの窓の中だけを流れ、ドットの上には来ない */
   .ledtxt{white-space:nowrap; display:inline-block; will-change:transform}
   .ledtxt.scroll{animation:ledscroll var(--led-dur, 14s) linear infinite}
   @keyframes ledscroll{0%,18%{transform:translateX(0)} 100%{transform:translateX(-100%)}}   /* まず静止で読ませてから左へ流す */
@@ -447,7 +448,7 @@
         <button class="go resume" id="btn-resume" hidden>前回の続きから</button>
         <div class="sub num">復習待ち <span id="h-due">0</span> · 新規 <span id="h-new">0</span> · きょう答えた <span id="h-today">0</span></div>
       </div>
-      <div class="led" id="h-coach" aria-live="polite" title="タップで次のTips"><span class="leddot"></span><span class="ledtxt" id="h-coach-t"></span></div>
+      <div class="led" id="h-coach" aria-live="polite" title="タップで次のTips"><span class="leddot"></span><span class="ledwin"><span class="ledtxt" id="h-coach-t"></span></span></div>
       <div class="jhead">合格までの道のり</div>
       <div class="journey" id="h-journey"></div>
       <div class="more">
@@ -924,7 +925,7 @@ function showTip(next){
   el.className = "ledtxt"; void el.offsetWidth;
   el.textContent = TIPS[tipIdx];
   const box = $("#h-coach");
-  const over = el.scrollWidth > box.clientWidth - 30;
+  const over = el.scrollWidth > el.parentElement.clientWidth;
   el.classList.add(over ? "scroll" : "swap");
   if(over) el.style.setProperty("--led-dur", Math.max(12, Math.round(el.scrollWidth / 40) + 3) + "s");
 }
