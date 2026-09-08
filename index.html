@@ -71,11 +71,11 @@
   .screen{display:none; flex-direction:column; flex:1}
   .screen.on{display:flex}
   /* 画面遷移：奥へ進むときは右から、戻るときは左から。タブは短いフェード */
-  .screen.on.anim-push{animation:scrPush .24s cubic-bezier(.2,.7,.2,1)}
-  .screen.on.anim-pop{animation:scrPop .22s cubic-bezier(.2,.7,.2,1)}
+  .screen.on.anim-push{animation:scrPush .34s cubic-bezier(.2,.7,.2,1)}
+  .screen.on.anim-pop{animation:scrPop .30s cubic-bezier(.2,.7,.2,1)}
   @keyframes scrPush{from{opacity:0; transform:translateX(28px)} to{opacity:1; transform:none}}
   @keyframes scrPop{from{opacity:0; transform:translateX(-22px)} to{opacity:1; transform:none}}
-  .tabpane.on.anim-tab{animation:paneIn .18s ease-out}
+  .tabpane.on.anim-tab{animation:paneIn .26s ease-out}
   @keyframes paneIn{from{opacity:0; transform:translateY(6px)} to{opacity:1; transform:none}}
   @media (prefers-reduced-motion: reduce){ .screen.on.anim-push,.screen.on.anim-pop,.tabpane.on.anim-tab{animation:none} }
   .dtitle{font-size:12px; color:var(--ink-soft); font-weight:500; flex:none; max-width:40%; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; letter-spacing:.02em}
@@ -178,7 +178,7 @@
   .dhead{display:flex; align-items:center; gap:12px; padding:14px 0 10px; position:sticky; top:0; background:var(--bg); z-index:5}
   .backbtn{width:48px; height:48px; border-radius:12px; background:var(--surface); border:1px solid var(--line); font-size:18px; flex:none; display:grid; place-items:center}
   .pbar{flex:1; height:8px; border-radius:99px; background:var(--surface2); overflow:hidden}
-  .pbar>div{height:100%; background:var(--accent); border-radius:99px; transition:width .3s}
+  .pbar>div{height:100%; background:var(--accent); border-radius:99px; transition:width .42s cubic-bezier(.2,.7,.2,1)}
   .pcount{font-size:12px; color:var(--ink-soft); flex:none}
 
   /* problem card */
@@ -243,9 +243,9 @@
   .cta:disabled{opacity:.35}
 
   /* sheets */
-  .scrim{position:fixed; inset:0; background:rgba(10,15,12,.45); opacity:0; pointer-events:none; transition:opacity .2s; z-index:30}
+  .scrim{position:fixed; inset:0; background:rgba(10,15,12,.45); opacity:0; pointer-events:none; transition:opacity .28s; z-index:30}
   .scrim.on{opacity:1; pointer-events:auto}
-  .sheet{position:fixed; left:0; right:0; bottom:0; z-index:31; background:var(--surface); border-radius:20px 20px 0 0; box-shadow:0 -8px 40px rgba(0,0,0,.25); transform:translateY(105%); transition:transform .22s ease-out; padding:14px 16px calc(96px + env(safe-area-inset-bottom)); max-height:min(85dvh, 88svh); overflow-y:auto; -webkit-overflow-scrolling:touch; overscroll-behavior:contain; touch-action:pan-y pinch-zoom}
+  .sheet{position:fixed; left:0; right:0; bottom:0; z-index:31; background:var(--surface); border-radius:20px 20px 0 0; box-shadow:0 -8px 40px rgba(0,0,0,.25); transform:translateY(105%); transition:transform .30s cubic-bezier(.2,.7,.2,1); padding:14px 16px calc(96px + env(safe-area-inset-bottom)); max-height:min(85dvh, 88svh); overflow-y:auto; -webkit-overflow-scrolling:touch; overscroll-behavior:contain; touch-action:pan-y pinch-zoom}
   .sheet.on{transform:translateY(0)}
   .sheet .inner{max-width:480px; margin:0 auto}
   .sheet h3{margin:0 0 10px; font-size:14px}

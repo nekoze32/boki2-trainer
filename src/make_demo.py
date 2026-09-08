@@ -4,46 +4,61 @@
     python make_demo.py
 
 出力先: ../_demo/
-  drill.gif      … 計算ドリル（ボックス図を空欄タップで埋める）＝一番の売り
-  shiwake.gif    … 仕訳（科目タップ＋テンキーで計算して判定）
-  exam.gif       … 模試（90分タイマー・大問ナビ）
-  s_home.png / s_map.png / s_drill.png / s_exam.png / s_result.png … 単体スクショ（枠つき）
-  threeup.png    … 3画面並び（記事の導入・SNSの1枚目）
-  ogp.png        … 1200x630 のアイキャッチ（noteのヘッダー用）
+  drill.mp4 / drill.gif      … 計算ドリル（ボックス図を空欄タップで埋める）＝一番の売り
+  shiwake.mp4 / shiwake.gif  … 仕訳（科目タップ＋テンキーで計算して判定）
+  exam.mp4 / exam.gif        … 模試（90分タイマー・大問ナビ）
+  s_*.png                    … 各画面の枠つきスクショ
+  threeup.png                … 3画面並び（記事の導入・SNSの1枚目）
+  ogp.png                    … 1200x630 のアイキャッチ（noteのヘッダー用）
+
+なめらかに撮るしくみ：
+  ブラウザのスクリーンショットは1枚150ms前後かかるので、そのまま撮ると7fps程度になりカクつく。
+  そこで **アプリのアニメーションを SLOWMO 倍だけ遅くして撮り、時間軸を 1/SLOWMO に縮めて**
+  25fps へ並べ直す。見た目の速さは実際のアプリのまま、コマ数だけが増える。
+  止まっている時間は撮らずに時間だけ進める（同じ絵を何枚も撮っても無駄なので）。
 
 素材は「使い込んだ状態」を作ってから撮る。まっさらの 0/26駅 では魅力が伝わらない。
 """
-import os, sys, io, json, time, datetime
+import os, sys, io, json, time, glob, shutil, subprocess, datetime
 from playwright.sync_api import sync_playwright
 from PIL import Image, ImageDraw, ImageFont
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 OUT = os.path.abspath(os.path.join(HERE, "..", "_demo"))
+TMP = os.path.join(OUT, "_frames")
 os.makedirs(OUT, exist_ok=True)
 sys.path.insert(0, HERE)
 import test_app as T
 
-W, H = 375, 812          # 撮影サイズ（iPhone相当）
-DSF = 2                  # 2倍で撮ってから縮小するときれい
-GIF_W = 320              # GIFの横幅（SNSで軽く見える大きさ）
-BG1, BG2 = (26, 38, 50), (52, 66, 86)   # 枠の背景（濃紺のグラデ）
+W, H = 375, 812        # 撮影サイズ（iPhone相当）
+DSF = 2                # 2倍で撮る（750x1624）＝縮めたとき文字がきれい
+SLOWMO = 8             # アプリのアニメを何倍ゆっくりにして撮るか
+FPS = 25               # 書き出しのコマ数
+GIF_W = 400            # GIFの横幅
+MP4_W = 560            # MP4の横幅（偶数）
+BG1, BG2 = (26, 38, 50), (52, 66, 86)
+
+_cand = glob.glob(os.path.join(os.environ.get("LOCALAPPDATA", ""), "Microsoft", "WinGet", "Packages",
+                               "Gyan.FFmpeg*", "*", "bin", "ffmpeg.exe")) + [shutil.which("ffmpeg")]
+FFMPEG = next((f for f in _cand if f and os.path.exists(f)), None)
 
 FONT = "C:/Windows/Fonts/meiryo.ttc"
-def font(sz, idx=0):
-    return ImageFont.truetype(FONT, sz, index=idx)
+def font(sz):
+    return ImageFont.truetype(FONT, sz)
+
 
 # ---------------- 使い込んだ状態を作る ----------------
 def seed_js():
     today = datetime.date.today()
     days = {}
     for i in range(11):
-        d = today - datetime.timedelta(days=i)
         if i in (4, 9):        # ときどき休む方が自然
             continue
+        d = today - datetime.timedelta(days=i)
         days[d.isoformat()] = [12, 10, 3, 14, 0, 8, 10, 6, 0, 11, 9][i]
     return """
       localStorage.clear();
-      const T = %s, DAYS = %s;
+      const DAYS = %s;
       const prog = {};
       PROBLEMS.forEach((p, i) => {
         if(i >= 34) return;                       // 34問に着手済み
@@ -58,37 +73,96 @@ def seed_js():
       const ex = new Date(); ex.setDate(ex.getDate() + 38);
       localStorage.setItem("bokitore:settings", JSON.stringify(
         {cat: "both", n: 10, theme: "system", examDate: ex.toISOString().slice(0,10)}));
-    """ % (json.dumps(True), json.dumps(days, ensure_ascii=False))
+    """ % json.dumps(days, ensure_ascii=False)
+
 
 # ---------------- 枠をつける ----------------
-def framed(png_bytes, pad=26, radius=34, scale=1.0):
+def framed(png_bytes, pad=26, radius=34):
     im = Image.open(io.BytesIO(png_bytes)).convert("RGB")
-    if scale != 1.0:
-        im = im.resize((int(im.width * scale), int(im.height * scale)), Image.LANCZOS)
     w, h = im.size
-    # 角丸マスク
     mask = Image.new("L", (w, h), 0)
     ImageDraw.Draw(mask).rounded_rectangle([0, 0, w - 1, h - 1], radius=radius, fill=255)
     canvas = Image.new("RGB", (w + pad * 2, h + pad * 2))
     d = ImageDraw.Draw(canvas)
-    for y in range(canvas.height):      # 縦グラデ
+    for y in range(canvas.height):
         t = y / max(1, canvas.height - 1)
         d.line([(0, y), (canvas.width, y)],
                fill=tuple(int(BG1[i] + (BG2[i] - BG1[i]) * t) for i in range(3)))
-    shadow = Image.new("RGB", (w, h), (0, 0, 0))
-    canvas.paste(shadow, (pad + 3, pad + 6), mask)
+    canvas.paste(Image.new("RGB", (w, h), (0, 0, 0)), (pad + 4, pad + 8), mask)
     canvas.paste(im, (pad, pad), mask)
     return canvas
 
-def save_gif(frames, path, ms=520):
-    if not frames:
-        print("  !! フレームなし", path); return
-    fs = [f.convert("P", palette=Image.ADAPTIVE, colors=200) for f in frames]
-    fs[0].save(path, save_all=True, append_images=fs[1:], duration=ms, loop=0, optimize=True, disposal=2)
-    print("  ", os.path.basename(path), "%.1f MB / %d frames" % (os.path.getsize(path) / 1e6, len(fs)))
+
+def run(cmd):
+    subprocess.run(cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, check=False)
+
+
+# ---------------- 収録（再生時の時間軸つき） ----------------
+class Rec:
+    def __init__(self, page, name):
+        self.page, self.name = page, name
+        self.dir = os.path.join(TMP, name)
+        shutil.rmtree(self.dir, ignore_errors=True); os.makedirs(self.dir)
+        self.items = []      # (再生時の時刻[秒], ファイル)
+        self.t = 0.0
+        self.n = 0
+
+    def _grab(self, at):
+        path = os.path.join(self.dir, "raw_%05d.png" % self.n); self.n += 1
+        self.page.screenshot(path=path)
+        self.items.append((at, path))
+
+    def motion(self, js=None, sec=0.42):
+        """操作 → アニメの最中を連写。sec は『再生したときの秒数』"""
+        if js:
+            self.page.evaluate(js)
+        t0 = time.time(); span = sec * SLOWMO
+        while True:
+            el = time.time() - t0
+            self._grab(self.t + min(el / SLOWMO, sec))
+            if el >= span:
+                break
+        self.t += sec
+
+    def hold(self, sec=0.6):
+        """止まっている時間。撮らずに時間だけ進める"""
+        self.t += sec
+
+    def do(self, js, sec=0.42, after=0.5):
+        self.motion(js, sec); self.hold(after)
+
+    def render(self):
+        if not self.items:
+            return
+        total = self.t + 0.2
+        seq = os.path.join(self.dir, "seq"); os.makedirs(seq, exist_ok=True)
+        j = 0
+        for k in range(int(total * FPS)):
+            t = k / FPS
+            while j + 1 < len(self.items) and abs(self.items[j + 1][0] - t) <= abs(self.items[j][0] - t):
+                j += 1
+            shutil.copyfile(self.items[j][1], os.path.join(seq, "f_%05d.png" % k))
+        pat = os.path.join(seq, "f_%05d.png")
+        mp4 = os.path.join(OUT, self.name + ".mp4")
+        gif = os.path.join(OUT, self.name + ".gif")
+        run([FFMPEG, "-y", "-framerate", str(FPS), "-i", pat,
+             "-vf", "scale=%d:-2:flags=lanczos" % MP4_W,
+             "-c:v", "libx264", "-pix_fmt", "yuv420p", "-crf", "20", "-movflags", "+faststart", mp4])
+        run([FFMPEG, "-y", "-framerate", str(FPS), "-i", pat,
+             "-filter_complex",
+             "scale=%d:-1:flags=lanczos,split[a][b];[a]palettegen=max_colors=192:stats_mode=diff[p];"
+             "[b][p]paletteuse=dither=bayer:bayer_scale=4:diff_mode=rectangle" % GIF_W, gif])
+        for f in (mp4, gif):
+            if os.path.exists(f):
+                print("   %-12s %4.1f秒 / %.1f MB" % (os.path.basename(f), total, os.path.getsize(f) / 1e6))
+        shutil.rmtree(self.dir, ignore_errors=True)
+
 
 # ---------------- 撮影 ----------------
 def main():
+    if not FFMPEG:
+        print("ffmpeg が見つかりません。winget install Gyan.FFmpeg を実行してください"); sys.exit(1)
+    shutil.rmtree(TMP, ignore_errors=True); os.makedirs(TMP)
     httpd = T.serve()
     with sync_playwright() as pw:
         b = pw.chromium.launch()
@@ -101,120 +175,80 @@ def main():
         page.evaluate(T.HELPERS)
         page.wait_for_timeout(500)
 
-        # 画面の取り込み（GIF用・枠つき）
-        def grab():
-            im = Image.open(io.BytesIO(page.screenshot())).convert("RGB")
-            im = im.resize((GIF_W, int(im.height * GIF_W / im.width)), Image.LANCZOS)
-            w, h = im.size
-            mask = Image.new("L", (w, h), 0)
-            ImageDraw.Draw(mask).rounded_rectangle([0, 0, w - 1, h - 1], radius=22, fill=255)
-            pad = 16
-            canvas = Image.new("RGB", (w + pad * 2, h + pad * 2))
-            d = ImageDraw.Draw(canvas)
-            for y in range(canvas.height):
-                t = y / max(1, canvas.height - 1)
-                d.line([(0, y), (canvas.width, y)],
-                       fill=tuple(int(BG1[i] + (BG2[i] - BG1[i]) * t) for i in range(3)))
-            canvas.paste(im, (pad, pad), mask)
-            return canvas
-
-        def hold(n=1):
-            """止まっている画（同じ絵をn枚）"""
-            f = grab(); return [f] * n
-
-        def motion(sec=0.9):
-            """アニメーションの最中を、撮れるだけ連写する"""
-            fs = []; t0 = time.time()
-            while time.time() - t0 < sec:
-                fs.append(grab())
-            return fs
-
-        def act(js, sec=0.9, after=2):
-            """操作 → その直後から連写 → 落ち着いた画を数枚"""
-            page.evaluate(js)
-            return motion(sec) + hold(after)
-
         def still(name):
-            buf = io.BytesIO()
-            Image.open(io.BytesIO(page.screenshot())).convert("RGB").save(buf, "PNG")
-            framed(buf.getvalue(), pad=30, radius=40).save(os.path.join(OUT, name))
+            framed(page.screenshot(), pad=30, radius=40).save(os.path.join(OUT, name))
             print("  ", name)
 
-        # ---------- 静止画 ----------
         print("静止画:")
-        page.evaluate("setTab('today')"); page.wait_for_timeout(400); still("s_home.png")
-        page.evaluate("setTab('map')"); page.wait_for_timeout(400); still("s_map.png")
-        page.evaluate("setTab('exam')"); page.wait_for_timeout(400); still("s_exam.png")
-        page.evaluate("startDrill('D1'); __t.cta(); __t.keys('200'); __t.press('OK'); __t.cta(); __t.keys('168000'); __t.press('OK')")
-        page.wait_for_timeout(600); still("s_drill.png")
+        page.evaluate("setTab('today')"); page.wait_for_timeout(500); still("s_home.png")
+        page.evaluate("setTab('map')"); page.wait_for_timeout(500); still("s_map.png")
+        page.evaluate("setTab('exam')"); page.wait_for_timeout(500); still("s_exam.png")
+        page.evaluate("startDrill('D1'); __t.cta(); __t.keys('200'); __t.press('OK'); "
+                      "__t.cta(); __t.keys('168000'); __t.press('OK')")
+        page.wait_for_timeout(800); still("s_drill.png")
         page.evaluate("goHome()"); page.wait_for_function("mode === 'home'")
 
-        # アニメーションを3倍ゆっくりにして、その最中を連写する。
-        # 再生は100ms間隔なので、captureのコマ落ちが埋まって「動いて見える」GIFになる。
-        SLOWMO = """*, *::before, *::after {
-            animation-duration: .72s !important;
-            transition-duration: .72s !important;
-        }"""
-        slow = page.add_style_tag(content=SLOWMO)
+        # アニメを SLOWMO 倍ゆっくりに（撮影のあいだだけ）
+        page.add_style_tag(content="*, *::before, *::after { animation-duration: %.2fs !important;"
+                                   " transition-duration: %.2fs !important; }"
+                                   % (0.34 * SLOWMO, 0.34 * SLOWMO))
+        SEC = 0.44     # 遷移1回を、再生時に何秒に見せるか
 
-        # ---------- GIF：計算ドリル ----------
-        print("GIF ドリル:")
-        f = []
-        page.evaluate("setTab('drills')"); page.wait_for_timeout(700)
-        f += hold(6)
-        f += act("startDrill('D1')", 1.1, 4)                                  # 右からスライドイン
-        f += act("document.querySelector('#b-boxes .blank.active').click()", 1.0, 3)   # テンキーがせり上がる
+        print("ドリル:")
+        r = Rec(page, "drill")
+        r.motion("setTab('drills')", SEC); r.hold(1.0)
+        r.do("startDrill('D1')", SEC, 1.1)
+        r.do("document.querySelector('#b-boxes .blank.active').click()", SEC, 0.7)
         for ch in "200":
-            f += act("__t.press('%s')" % ch, 0.18, 1)
-        f += act("__t.press('OK')", 1.0, 4)                                   # シートが下がって欄が埋まる
-        f += act("__t.cta()", 0.9, 2)
+            r.do("__t.press('%s')" % ch, 0.10, 0.14)
+        r.do("__t.press('OK')", SEC, 1.0)
+        r.do("__t.cta()", SEC, 0.5)
         for ch in "168000":
-            f += act("__t.press('%s')" % ch, 0.14, 1)
-        f += act("__t.press('OK')", 1.0, 4)
+            r.do("__t.press('%s')" % ch, 0.10, 0.10)
+        r.do("__t.press('OK')", SEC, 1.0)
         for v in ["672000", "120000", "960000", "288000"]:
-            page.evaluate("__t.cta(); __t.keys('%s')" % v); page.wait_for_timeout(120)
-            f += act("__t.press('OK')", 0.5, 1)
-        page.evaluate("__t.cta(); __t.keys('1632000')"); page.wait_for_timeout(120)
-        f += act("__t.press('OK')", 1.2, 8)                                   # 完答
-        save_gif(f, os.path.join(OUT, "drill.gif"), ms=100)
-        page.evaluate("goHome()"); page.wait_for_function("mode === 'home'"); page.wait_for_timeout(400)
+            page.evaluate("__t.cta(); __t.keys('%s')" % v); r.hold(0.25)
+            r.do("__t.press('OK')", 0.30, 0.35)
+        page.evaluate("__t.cta(); __t.keys('1632000')"); r.hold(0.25)
+        r.do("__t.press('OK')", SEC, 2.4)
+        r.render()
+        page.evaluate("goHome()"); page.wait_for_function("mode === 'home'"); page.wait_for_timeout(500)
 
-        # ---------- GIF：仕訳 ----------
-        print("GIF 仕訳:")
-        f = hold(4)
-        f += act("startSession('retry', {ids: ['K08', 'S12']})", 1.1, 4)
-        f += act("document.querySelector(`.addline[data-side='debit']`).click()", 1.0, 3)
-        f += act("__t.chip('仕掛品')", 1.0, 2)
+        print("仕訳:")
+        r = Rec(page, "shiwake")
+        r.motion(None, 0.06); r.hold(0.9)
+        r.do("startSession('retry', {ids: ['K08', 'S12']})", SEC, 1.5)
+        r.do("document.querySelector(`.addline[data-side='debit']`).click()", SEC, 0.8)
+        r.do("__t.chip('仕掛品')", SEC, 0.6)
         for k in ["8", "00", "×", "4", "5", "0"]:
-            f += act("__t.press('%s')" % k, 0.16, 1)
-        f += act("__t.press('OK')", 1.0, 4)
-        page.evaluate("document.querySelector(`.addline[data-side='credit']`).click()"); page.wait_for_timeout(700)
-        page.evaluate("__t.chip('製造間接費')"); page.wait_for_timeout(600)
-        page.evaluate("__t.keys('360000')"); page.wait_for_timeout(200)
-        f += act("__t.press('OK')", 1.0, 3)
-        f += act("__t.cta()", 1.4, 10)                                        # 判定＝駅に到着の演出
-        save_gif(f, os.path.join(OUT, "shiwake.gif"), ms=100)
-        page.evaluate("goHome()"); page.wait_for_function("mode === 'home'"); page.wait_for_timeout(400)
+            r.do("__t.press('%s')" % k, 0.10, 0.13)
+        r.hold(0.5)
+        r.do("__t.press('OK')", SEC, 1.0)
+        r.do("document.querySelector(`.addline[data-side='credit']`).click()", SEC, 0.5)
+        r.do("__t.chip('製造間接費')", SEC, 0.4)
+        page.evaluate("__t.keys('360000')"); r.hold(0.35)
+        r.do("__t.press('OK')", SEC, 0.9)
+        r.do("__t.cta()", 0.6, 3.2)          # 判定＝駅に到着の演出
+        r.render()
+        page.evaluate("goHome()"); page.wait_for_function("mode === 'home'"); page.wait_for_timeout(500)
 
-        # ---------- GIF：模試 ----------
-        print("GIF 模試:")
-        f = []
-        f += act("setTab('exam')", 0.9, 4)
-        f += act("startExam('M1', true)", 1.3, 6)
+        print("模試:")
+        r = Rec(page, "exam")
+        r.do("setTab('exam')", SEC, 1.3)
+        r.do("startExam('M1', true)", SEC, 2.0)
         for sec in [1, 2, 3, 4]:
-            f += act("__t.examGo(%d)" % sec, 0.7, 3)
-        f += act("__t.examGo(0)", 0.7, 5)
-        save_gif(f, os.path.join(OUT, "exam.gif"), ms=110)
+            r.do("__t.examGo(%d)" % sec, 0.34, 1.0)
+        r.do("__t.examGo(0)", 0.34, 1.8)
+        r.render()
         page.evaluate("goHome()"); page.wait_for_function("mode === 'home'")
-        page.evaluate("(e => e && e.remove())(document.querySelector('style[data-slowmo]'))")
 
-        # ---------- 結果画面の静止画 ----------
         page.evaluate("""startSession('retry', {ids: PROBLEMS.slice(0,5).map(p => p.id)});
             sessionLog = PROBLEMS.slice(0,5).map((p,i) => ({id: p.id, ok: i !== 3}));
             renderResult(); show('result', {replace:true});""")
-        page.wait_for_timeout(900); still("s_result.png")
+        page.wait_for_timeout(1200); still("s_result.png")
         b.close()
     httpd.shutdown()
+    shutil.rmtree(TMP, ignore_errors=True)
 
     # ---------------- 並べ画・OGP ----------------
     print("合成:")
@@ -232,7 +266,6 @@ def main():
         canvas.paste(im, (x, pad)); x += im.width + gap
     canvas.save(os.path.join(OUT, "threeup.png")); print("   threeup.png", canvas.size)
 
-    # OGP 1200x630
     ogp = Image.new("RGB", (1200, 630))
     d = ImageDraw.Draw(ogp)
     for y in range(630):
@@ -250,6 +283,7 @@ def main():
     d.text((66, 520), "nekoze32.github.io/boki2-trainer", font=font(22), fill=(255, 180, 58))
     ogp.save(os.path.join(OUT, "ogp.png")); print("   ogp.png", ogp.size)
     print("\n出力先:", OUT)
+
 
 if __name__ == "__main__":
     main()
