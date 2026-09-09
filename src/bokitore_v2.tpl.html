@@ -38,7 +38,12 @@
     --shadow:0 6px 24px rgba(0,0,0,.4);
   }
   *{box-sizing:border-box; -webkit-tap-highlight-color:transparent}
-  html,body{margin:0; padding:0}
+  /* スクロールは #app の中だけで起こす。文書そのものは動かさない。
+     ①中身が収まっている問題画面でも指に付いてページが弾む（ゴムのような空スクロール）を止める
+     ②電卓シートを下に払って閉じるとき、後ろのページまで一緒に動く（スクロールの連鎖）を止める
+        ＝シートが短くてスクロールできないと overscroll-behavior:contain は効かず、指の動きが文書へ流れていた */
+  html,body{margin:0; padding:0; height:100%; overflow:hidden; overscroll-behavior:none}
+  html{height:100dvh}
   /* ダブルタップ拡大だけを止める。manipulation はピンチ拡大を残すので、拡大したい人の手段は奪わない
      （user-scalable=no は拡大そのものを禁止するうえ、iOS Safariでは無視される） */
   body{background:var(--bg); color:var(--ink); font-family:"Zen Kaku Gothic New","Hiragino Kaku Gothic ProN","Yu Gothic",sans-serif; font-size:15px; line-height:1.7; touch-action:manipulation;
@@ -49,7 +54,8 @@
   h1,h2,h3,.disp{font-family:"Zen Maru Gothic","Zen Kaku Gothic New",sans-serif; text-wrap:balance}
   button{font-family:inherit; font-size:inherit; color:inherit; background:none; border:none; padding:0; cursor:pointer}
   button:focus-visible,[tabindex]:focus-visible{outline:2px solid var(--accent); outline-offset:2px}
-  #app{max-width:480px; margin:0 auto; min-height:100dvh; display:flex; flex-direction:column; padding:0 16px calc(96px + env(safe-area-inset-bottom))}
+  #app{max-width:480px; margin:0 auto; height:100%; display:flex; flex-direction:column; padding:0 16px calc(96px + env(safe-area-inset-bottom));
+       overflow-y:auto; overscroll-behavior-y:contain; -webkit-overflow-scrolling:touch}
   .screen{display:none; flex-direction:column; flex:1}
   .screen.on{display:flex}
   /* 画面遷移：奥へ進むときは右から、戻るときは左から。タブは短いフェード */
@@ -227,11 +233,18 @@
   /* sheets */
   .scrim{position:fixed; inset:0; background:rgba(10,15,12,.45); opacity:0; pointer-events:none; transition:opacity .28s; z-index:30}
   .scrim.on{opacity:1; pointer-events:auto}
-  .sheet{position:fixed; left:0; right:0; bottom:0; z-index:31; background:var(--surface); border-radius:20px 20px 0 0; box-shadow:0 -8px 40px rgba(0,0,0,.25); transform:translateY(105%); transition:transform .30s cubic-bezier(.2,.7,.2,1); padding:14px 16px calc(96px + env(safe-area-inset-bottom)); max-height:min(85dvh, 88svh); overflow-y:auto; -webkit-overflow-scrolling:touch; overscroll-behavior:contain; touch-action:pan-y pinch-zoom}
+  .sheet{position:fixed; left:0; right:0; bottom:0; z-index:31; background:var(--surface); border-radius:20px 20px 0 0; box-shadow:0 -8px 40px rgba(0,0,0,.25); transform:translateY(105%); transition:transform .30s cubic-bezier(.2,.7,.2,1); padding:14px 16px calc(18px + env(safe-area-inset-bottom)); max-height:min(85dvh, 88svh); overflow-y:auto; -webkit-overflow-scrolling:touch; overscroll-behavior:contain; touch-action:pan-y pinch-zoom}
   .sheet.on{transform:translateY(0)}
   .sheet .inner{max-width:480px; margin:0 auto}
   .sheet h3{margin:0 0 10px; font-size:14px}
   .grabber{width:36px; height:4px; border-radius:99px; background:var(--line); margin:0 auto 10px}
+  /* 問題文の数字をそのままキーにする。¥15,000,000 を目で追って12桁打ち直すのが、この画面のいちばんの手間だった */
+  .numchips{display:flex; gap:6px; overflow-x:auto; margin:0 0 10px; padding-bottom:4px; scrollbar-width:thin; -webkit-overflow-scrolling:touch}
+  .numchips button{flex:none; height:34px; padding:0 12px; border-radius:99px; background:var(--accent-soft); color:var(--accent); border:1px solid var(--line); font-size:13px; font-weight:700; white-space:nowrap; font-family:"IBM Plex Mono",ui-monospace,monospace; font-variant-numeric:tabular-nums}
+  .numchips button:active{background:var(--accent); color:var(--accent-ink)}
+  /* メモは既定で畳む。開きっぱなしだと電卓シートが画面の75%を覆って問題文が読めない */
+  .memotoggle{display:block; width:100%; height:36px; margin-bottom:10px; border-radius:10px; background:var(--surface2); border:1px solid var(--line); font-size:13px; color:var(--ink-soft); text-align:left; padding:0 12px}
+  .memotoggle[aria-expanded="true"]{color:var(--accent); font-weight:600}
   @media (prefers-reduced-motion: reduce){ .sheet{transition:none} .scrim{transition:none} }
   .chips{display:flex; flex-wrap:wrap; gap:8px}
   .chip{background:var(--surface2); border:1px solid var(--line); border-radius:99px; padding:9px 14px; font-size:14px; min-height:44px}
@@ -252,7 +265,7 @@
   .npk{height:52px; border-radius:12px; background:var(--surface2); border:1px solid var(--line); font-size:19px; font-weight:500}
   .npk:active{background:var(--accent-soft)}
   .npk.op{background:var(--surface); color:var(--accent); font-weight:700}
-  .npk.zero{grid-column:span 2}   /* 市販の電卓と同じく 0 は横長 */
+  .npk.dot{font-weight:700}
   .npdelbtn{width:100%; margin-top:10px; height:44px; border-radius:12px; color:var(--ng-ink); background:var(--ng-bg); border:1px solid var(--ng-line); font-weight:700; font-size:14px; display:none}
   .npdelbtn.on{display:block}
   .memo{width:100%; min-height:72px; background:var(--surface2); border:1px solid var(--line); border-radius:12px; color:var(--ink); font-family:inherit; font-size:14px; padding:10px 12px; resize:vertical; margin-bottom:10px}
@@ -624,13 +637,14 @@
 
 <div class="sheet" id="sheet-num" role="dialog" aria-label="金額を入力">
   <div class="inner"><div class="grabber"></div>
+    <div class="numchips" id="np-chips" hidden></div>
     <div class="npdisp"><button class="closex inrow" aria-label="閉じる">✕</button><div class="disp"><div class="ctx" id="np-ctx"></div><div class="val num" id="np-val">0</div></div><button class="npk okmini" data-k="OK">OK</button></div>
     <div class="npgrid">
       <button class="npk op" data-k="C">C</button><button class="npk op" data-k="⌫">⌫</button><button class="npk num" data-k="000">000</button><button class="npk op" data-op="÷">÷</button>
       <button class="npk num">7</button><button class="npk num">8</button><button class="npk num">9</button><button class="npk op" data-op="×">×</button>
       <button class="npk num">4</button><button class="npk num">5</button><button class="npk num">6</button><button class="npk op" data-op="−">−</button>
       <button class="npk num">1</button><button class="npk num">2</button><button class="npk num">3</button><button class="npk op" data-op="＋">＋</button>
-      <button class="npk num zero">0</button><button class="npk num" data-k="00">00</button><button class="npk op" data-op="＝">＝</button>
+      <button class="npk num">0</button><button class="npk num" data-k="00">00</button><button class="npk num dot" data-k=".">.</button><button class="npk op" data-op="＝">＝</button>
     </div>
     <button class="npdelbtn" id="np-del">この行を削除</button>
   </div>
@@ -645,15 +659,17 @@
 </div>
 
 <div class="sheet" id="sheet-calc" role="dialog" aria-label="電卓とメモ">
-  <div class="inner"><div class="grabber"></div><h3>メモ & 電卓</h3>
-    <textarea class="memo" id="memo" placeholder="下書きメモ（この端末にだけ保存されます）"></textarea>
+  <div class="inner"><div class="grabber"></div>
+    <button class="memotoggle" id="memo-toggle" aria-expanded="false" aria-controls="memo">✎ メモ</button>
+    <textarea class="memo" id="memo" placeholder="下書きメモ（この端末にだけ保存されます）" hidden></textarea>
+    <div class="numchips" id="cp-chips" hidden></div>
     <div class="npdisp"><button class="closex inrow" aria-label="閉じる">✕</button><div class="disp"><div class="val num" id="cp-val">0</div></div><button class="npk okmini" data-k="↵メモ">↵メモ</button></div>
     <div class="npgrid">
       <button class="npk op" data-k="C">C</button><button class="npk op" data-k="⌫">⌫</button><button class="npk num" data-k="000">000</button><button class="npk op" data-op="÷">÷</button>
       <button class="npk num">7</button><button class="npk num">8</button><button class="npk num">9</button><button class="npk op" data-op="×">×</button>
       <button class="npk num">4</button><button class="npk num">5</button><button class="npk num">6</button><button class="npk op" data-op="−">−</button>
       <button class="npk num">1</button><button class="npk num">2</button><button class="npk num">3</button><button class="npk op" data-op="＋">＋</button>
-      <button class="npk num zero">0</button><button class="npk num" data-k="00">00</button><button class="npk op" data-op="＝">＝</button>
+      <button class="npk num">0</button><button class="npk num" data-k="00">00</button><button class="npk num dot" data-k=".">.</button><button class="npk op" data-op="＝">＝</button>
     </div>
 
   </div>
@@ -692,6 +708,8 @@ function openFeedback(where, detail){
 
 /* ================= utils ================= */
 const $ = s => document.querySelector(s);
+// 画面を先頭へ。スクロールするのは #app であって window ではない（html,body は overflow:hidden）
+function toTop(){ const a = document.getElementById("app"); if(a) a.scrollTop = 0; }
 const yen = n => "¥" + n.toLocaleString("ja-JP");
 const fmtDate = d => d.getFullYear() + "-" + String(d.getMonth()+1).padStart(2,"0") + "-" + String(d.getDate()).padStart(2,"0");
 const todayStr = () => fmtDate(new Date());
@@ -771,7 +789,7 @@ function show(name, opt){
   document.querySelectorAll(".screen").forEach(s => { s.classList.remove("on", "anim-push", "anim-pop"); });
   const scr = $("#scr-"+name); scr.classList.add("on", dir);
   scr.addEventListener("animationend", () => scr.classList.remove(dir), {once:true});
-  window.scrollTo(0,0);
+  toTop();
   updateCta();
   document.body.classList.toggle("home", name === "home");
   document.body.classList.toggle("wide", name === "exam" || name === "examresult");
@@ -807,7 +825,7 @@ function setTab(name){
     if(on && changed){ void p.offsetWidth; p.classList.add("anim-tab"); p.addEventListener("animationend", () => p.classList.remove("anim-tab"), {once:true}); }
   });
   document.querySelectorAll("#tabbar button").forEach(b => b.classList.toggle("sel", b.dataset.tab === tab));
-  window.scrollTo(0,0);
+  toTop();
 }
 document.querySelectorAll("#tabbar button").forEach(b => b.addEventListener("click", () => setTab(b.dataset.tab)));
 $("#h-teaser-map").addEventListener("click", () => setTab("map"));
@@ -1005,7 +1023,7 @@ function closeSheet(){
   if(openSheetEl){ openSheetEl.classList.remove("on"); openSheetEl.inert = true; openSheetEl.style.bottom = ""; openSheetEl = null; }
   scrim.classList.remove("on");
   $("#app").inert = false; $(".actionbar").classList.remove("behind");
-  if(lastFocus && lastFocus.focus){ try{ lastFocus.focus(); }catch(e){} }
+  if(lastFocus && lastFocus.focus){ try{ lastFocus.focus({preventScroll:true}); }catch(e){} }
   lastFocus = null;
 }
 scrim.addEventListener("click", closeSheet);
@@ -1043,13 +1061,23 @@ function makeCalc(valEl){
   c.render = () => {
     if(c.err){ valEl.textContent = "E"; return; }
     const shown = c.cur !== "" ? c.cur : (c.acc !== null ? String(c.acc) : "0");
-    valEl.textContent = Number(shown).toLocaleString("ja-JP", {maximumFractionDigits:2});
+    const dot = c.cur !== "" ? c.cur.indexOf(".") : -1;
+    // 打っている途中の「1.」や「1.50」は Number にすると末尾が消えるので、小数部はそのまま出す
+    if(dot >= 0) valEl.textContent = Number(shown.slice(0, dot) || 0).toLocaleString("ja-JP") + "." + shown.slice(dot + 1);
+    else valEl.textContent = Number(shown).toLocaleString("ja-JP", {maximumFractionDigits:2});
   };
   c.digit = d => {
     if(c.err) c.clear();
     if(c.fresh){ c.cur = ""; c.fresh = false; }
     if(c.cur.length >= 12) return;
     c.cur = ((c.cur === "0" ? "" : c.cur) + d).slice(0, 12); c.render();
+  };
+  // 小数点。償却率0.4・課税売上割合・原価計算の単価など、途中式で必ず要る
+  c.dot = () => {
+    if(c.err) c.clear();
+    if(c.fresh){ c.cur = ""; c.fresh = false; }
+    if(c.cur.indexOf(".") >= 0 || c.cur.length >= 11) return;
+    c.cur = (c.cur === "" ? "0" : c.cur) + "."; c.render();
   };
   c.apply = () => {
     const x = Number(c.cur || 0);
@@ -1068,6 +1096,10 @@ function makeCalc(valEl){
     else { c.op = op; c.cur = ""; }
     c.render();
   };
+  c.setNum = v => {   // 問題文チップから丸ごと入れる
+    if(c.err) c.clear();
+    c.cur = String(v).slice(0, 12); c.fresh = false; c.render();
+  };
   c.back = () => { c.cur = c.cur.slice(0,-1); c.render(); };
   c.clear = () => { c.acc=null; c.op=null; c.cur=""; c.fresh=false; c.err=false; c.render(); };
   c.value = raw => {   // raw=true なら丸めない（メモ電卓用）。回答入力は整数に丸める
@@ -1079,6 +1111,51 @@ function makeCalc(valEl){
   };
   return c;
 }
+/* ---- 問題文の数字チップ ----
+   いま画面に出ている問題文から金額・率・数量を拾って、電卓の上にキーとして並べる。
+   ねらいは2つ：シートで問題文が隠れても数字を探しに戻らなくていい／¥15,000,000 を打ち間違えない。 */
+function questionText(){
+  const scr = document.querySelector(".screen.on");
+  if(!scr) return "";
+  return [...scr.querySelectorAll(".qt, #b-step-q")].map(e => e.textContent).join("\n");
+}
+const CHIP_UNITS = "%|％|年|か月|ヶ月|カ月|個|台|株|口|人|回|枚|本|kg|ｋｇ|時間|割";
+function numChips(text){
+  // ×1年4月1日 のような日付は「数字」ではないので、拾う前に消しておく
+  const t = String(text)
+    .replace(/[×xX＊*〇○]?[0-9０-９]+\s*年\s*[0-9０-９]+\s*月(?:\s*[0-9０-９]+\s*日)?/g, " ")
+    .replace(/[0-9０-９]+\s*月\s*[0-9０-９]+\s*日/g, " ");
+  const re = new RegExp("([¥￥]?)([0-9][0-9,]*(?:\\.[0-9]+)?)\\s*(" + CHIP_UNITS + ")?", "g");
+  const out = [], seen = new Set();
+  let m;
+  while((m = re.exec(t)) && out.length < 10){
+    const yen = !!m[1], raw = m[2], unit = m[3] || "";
+    const v = raw.replace(/,/g, "");
+    if(!Number(v)) continue;
+    // 拾うのは金額・単位つき・3桁以上だけ。「第2期」の 2 のような裸の小さい数は拾わない
+    if(!yen && !unit && v.replace(".", "").length < 3) continue;
+    // 「1株あたり」「1kgあたり」の 1 は単価の言い回しであって、電卓に入れる数ではない
+    if(!yen && unit && Number(v) === 1) continue;
+    const label = (yen ? "¥" : "") + raw + unit;
+    if(seen.has(label)) continue;
+    seen.add(label);
+    out.push({label: label, v: v});
+  }
+  return out;
+}
+function fillChips(wrapId, calc){
+  const wrap = document.getElementById(wrapId);
+  if(!wrap) return;
+  wrap.innerHTML = "";
+  numChips(questionText()).forEach(n => {
+    const b = document.createElement("button");
+    b.type = "button"; b.textContent = n.label;
+    b.setAttribute("aria-label", n.label + " を電卓に入れる");
+    b.addEventListener("click", () => calc.setNum(n.v));
+    wrap.appendChild(b);
+  });
+  wrap.hidden = !wrap.children.length;
+}
 function wirePad(rootSel, calc, onOk){
   document.querySelectorAll(rootSel + " .npk").forEach(k => {
     k.addEventListener("click", () => {
@@ -1086,6 +1163,7 @@ function wirePad(rootSel, calc, onOk){
       if(op) calc.pressOp(op);
       else if(key === "C") calc.clear();
       else if(key === "⌫") calc.back();
+      else if(key === ".") calc.dot();
       else if(key === "OK" || key === "↵メモ") onOk();
       else { for(const ch of key) calc.digit(ch); }
     });
@@ -1100,6 +1178,7 @@ function askNumber(ctxLabel, cb, opts){
   $("#np-ctx").textContent = ctxLabel;
   npCommit = cb; npDelete = opts.onDelete || null; npAllowZero = !!opts.allowZero;
   $("#np-del").className = "npdelbtn" + (npDelete ? " on" : "");
+  fillChips("np-chips", npCalc);
   openSheet($("#sheet-num"));
 }
 $("#np-del").addEventListener("click", () => { const cb = npDelete; npDelete = null; npCommit = null; closeSheet(); if(cb) cb(); });
@@ -1114,11 +1193,25 @@ wirePad("#sheet-calc", cpCalc, () => {
   const memo = $("#memo");
   memo.value = (memo.value ? memo.value + "\n" : "") + cpCalc.value(true).toLocaleString("ja-JP", {maximumFractionDigits:2});
   store.set("memo", memo.value);
+  setMemoOpen(true);   // 書いた先が見えないと、入ったのか分からない
 });
 const savedMemo = store.get("memo", "");
 $("#memo").value = typeof savedMemo === "string" ? savedMemo : "";
 $("#memo").addEventListener("input", e => store.set("memo", e.target.value));
-$("#fab-calc").addEventListener("click", () => { if(openSheetEl === $("#sheet-calc")) closeSheet(); else openSheet($("#sheet-calc")); });
+function setMemoOpen(on){
+  const memo = $("#memo"), btn = $("#memo-toggle");
+  memo.hidden = !on;
+  btn.setAttribute("aria-expanded", on ? "true" : "false");
+  const lines = memo.value ? memo.value.split("\n").filter(l => l.trim()).length : 0;
+  btn.textContent = on ? "✎ メモを畳む" : (lines ? "✎ メモ（" + lines + "行）" : "✎ メモ");
+  store.set("memoOpen", !!on);
+}
+$("#memo-toggle").addEventListener("click", () => setMemoOpen($("#memo").hidden));
+setMemoOpen(store.get("memoOpen", false) === true);
+$("#fab-calc").addEventListener("click", () => {
+  if(openSheetEl === $("#sheet-calc")) closeSheet();
+  else { fillChips("cp-chips", cpCalc); openSheet($("#sheet-calc")); }
+});
 
 /* ================= settings ================= */
 function renderSettings(){
@@ -1630,7 +1723,7 @@ function renderExamNav(){
 function renderExam(){
   $("#e-title").textContent = exam.title;
   renderExamNav();
-  const body = $("#e-body"); body.innerHTML = ""; window.scrollTo(0,0);
+  const body = $("#e-body"); body.innerHTML = ""; toTop();
   if(exSec >= exam.sections.length){
     const card = document.createElement("div"); card.className = "qcard";
     card.innerHTML = '<div class="meta"><span>見直し</span></div><p class="qt" style="font-size:14px">'

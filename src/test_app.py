@@ -160,6 +160,108 @@ def t_calc(ctx):
     assert ev(p, "npCalc.clear(); __t ; '12345678901'.split('').forEach(d => npCalc.digit(d)); for(const c of '000') npCalc.digit(c); npCalc.cur.length") == 12
     assert ev(p, "cpCalc.clear(); cpCalc.digit('1'); cpCalc.digit('0'); cpCalc.pressOp('÷'); cpCalc.digit('4'); cpCalc.value(true)") == 2.5
 
+@test("電卓：小数点が打てる（入力途中の末尾も消えない・小数点は1個まで）")
+def t_calc_dot(ctx):
+    p = fresh_page(ctx)
+    ev(p, "document.querySelector('#btn-today').click()")
+    ev(p, """document.querySelector('.addline[data-side="debit"]').click();
+             document.querySelectorAll('#acct-chips .chip')[0].click();
+             __t.keys('300000'); __t.press('×'); __t.press('.')""")
+    assert ev(p, "document.querySelector('#np-val').textContent") == "0."   # 「0」だけに戻らない
+    ev(p, "__t.keys('40')")
+    assert ev(p, "document.querySelector('#np-val').textContent") == "0.40"  # 末尾の0が消えない
+    ev(p, "__t.press('.'); __t.press('.')")
+    assert ev(p, "npCalc.cur") == "0.40", "小数点が2個打てている"
+    ev(p, "__t.press('＝')")
+    assert ev(p, "document.querySelector('#np-val').textContent") == "120,000"
+    ev(p, "__t.press('OK')")
+    assert ev(p, "entry.debit[0][1]") == 120000
+    # 金額欄は整数に丸める（0.4 は 0 なので確定しない）
+    assert ev(p, "npCalc.clear(); npCalc.dot(); npCalc.digit('4'); npCalc.value(true)") == 0.4
+    assert ev(p, "npCalc.value()") == 0
+    assert not p._errors, p._errors
+
+@test("スクロールは #app の中だけ：文書は動かない＝空スクロールもシートからの連鎖もない")
+def t_scroll_lock(ctx):
+    p = fresh_page(ctx)
+    p.set_viewport_size({"width": 390, "height": 844})
+    for el in ["document.documentElement", "document.body"]:
+        assert ev(p, f"getComputedStyle({el}).overflowY") == "hidden", el
+    # WebKit(Playwright) は overscrollBehaviorY を CSSOM に出さないので、出る環境でだけ見る。
+    # 弾まないこと自体は下の window.scrollY で確かめている
+    ob = ev(p, "getComputedStyle(document.documentElement).overscrollBehaviorY || null")
+    assert ob in (None, "none"), ob
+    # 問題画面：中身が収まっていて、文書はどう押しても動かない
+    ev(p, "document.querySelector('#btn-today').click()")
+    p.wait_for_timeout(500)   # 画面遷移のアニメーションが終わってから測る
+    ev(p, "window.scrollTo(0, 500)")
+    assert ev(p, "window.scrollY") == 0, "文書がスクロールしている"
+    assert ev(p, "document.documentElement.scrollHeight") <= ev(p, "window.innerHeight") + 1, "文書が画面より高い"
+    # 電卓シートを開いても、後ろは動かない（下に払って閉じるとき一緒に動く原因）
+    ev(p, "document.querySelector('#fab-calc').click()")
+    ev(p, "window.scrollTo(0, 500)")
+    assert ev(p, "window.scrollY") == 0, "シートを開いている間に後ろのページが動く"
+    ev(p, "closeSheet()")
+    # 長い画面は #app の中でちゃんとスクロールする
+    ev(p, "goHome()")
+    p.wait_for_function("mode === 'home'")   # 戻りは history.back() 経由で非同期。ホームが出る前に測らない
+    ev(p, "setTab('map')")
+    app = "document.querySelector('#app')"
+    assert ev(p, f"{app}.scrollHeight > {app}.clientHeight"), "論点マップがスクロールできない"
+    ev(p, f"{app}.scrollTop = 300")
+    assert ev(p, f"{app}.scrollTop") == 300, "#app がスクロールしない"
+    ev(p, "setTab('record')")
+    assert ev(p, f"{app}.scrollTop") == 0, "タブを変えても先頭に戻らない"
+    assert not p._errors, p._errors
+
+@test("数字チップ：問題文の金額をタップで電卓に入れられる（日付は拾わない）")
+def t_numchips(ctx):
+    p = fresh_page(ctx)
+    # 拾う／拾わないの線引き
+    got = ev(p, """numChips('決算につき、備品（取得原価 ¥500,000、期首減価償却累計額 ¥200,000）について 200%定率法（耐用年数5年）')
+                   .map(c => c.label)""")
+    assert got == ["¥500,000", "¥200,000", "200%", "5年"], got
+    got = ev(p, "numChips('×1年4月1日、リース料年額 ¥60,000・リース期間5年').map(c => c.label)")
+    assert got == ["¥60,000", "5年"], got            # 日付は数字として拾わない
+    got = ev(p, "numChips('材料500kgを1kgあたり ¥1,000 で購入。第2期のこと。').map(c => c.label)")
+    assert got == ["500kg", "¥1,000"], got           # 「1kgあたり」の1と「第2期」の2は拾わない
+    # 金額入力シート：チップを押すと表示に入り、そのまま確定できる
+    ev(p, "document.querySelector('#btn-today').click()")
+    ev(p, """document.querySelector('.addline[data-side="debit"]').click();
+             document.querySelectorAll('#acct-chips .chip')[0].click()""")
+    n = ev(p, "document.querySelectorAll('#np-chips button').length")
+    assert n > 0, "金額入力シートに数字チップが出ていない"
+    ev(p, "document.querySelector('#np-chips button').click()")
+    v = ev(p, "npCalc.value()")
+    assert v == ev(p, "Number(numChips(questionText())[0].v)") and v > 0
+    ev(p, "__t.press('OK')")
+    assert ev(p, "entry.debit[0][1]") == v
+    assert not p._errors, p._errors
+
+@test("電卓シート：メモは畳んだ状態で開き、問題文が隠れない高さに収まる")
+def t_calc_sheet_height(ctx):
+    p = fresh_page(ctx)
+    p.set_viewport_size({"width": 390, "height": 844})
+    ev(p, "document.querySelector('#btn-today').click()")
+    ev(p, "document.querySelector('#fab-calc').click()")
+    assert ev(p, "document.querySelector('#memo').hidden"), "メモが開いたまま出ている"
+    assert ev(p, "document.querySelectorAll('#cp-chips button').length") > 0
+    r = ev(p, """(() => {
+      const sh = document.querySelector('#sheet-calc');
+      const qt = document.querySelector('#scr-quiz .qt');
+      return {top: window.innerHeight - sh.offsetHeight, qBottom: Math.round(qt.getBoundingClientRect().bottom)};
+    })()""")
+    assert r["top"] > r["qBottom"], ("電卓シートが問題文にかぶっている", r)
+    # メモは開ける／開いたことは次に開いたときも覚えている
+    ev(p, "document.querySelector('#memo-toggle').click()")
+    assert not ev(p, "document.querySelector('#memo').hidden")
+    assert ev(p, "store.get('memoOpen', false)") is True
+    # ↵メモ で電卓の値を書き足すとメモが開く
+    ev(p, "setMemoOpen(false); cpCalc.clear(); cpCalc.digit('1'); cpCalc.digit('2'); document.querySelector('#sheet-calc .okmini').click()")
+    assert not ev(p, "document.querySelector('#memo').hidden")
+    assert "12" in ev(p, "document.querySelector('#memo').value")
+    assert not p._errors, p._errors
+
 @test("ダブルタップで拡大しない・ただしピンチ拡大は残す")
 def t_doubletap(ctx):
     p = fresh_page(ctx)
@@ -171,7 +273,7 @@ def t_doubletap(ctx):
         ta = ev(p, f"getComputedStyle(document.querySelector('{sel}')).touchAction")
         assert "pinch-zoom" in ta or ta in ("auto", "manipulation"), f"{sel} でピンチ拡大が殺されている: {ta}"
 
-@test("電卓は市販と同じ並び（＝が右下・0が横長・OKはグリッド外）")
+@test("電卓は市販と同じ並び（＝が右下・小数点あり・OKはグリッド外）")
 def t_pad_layout(ctx):
     p = fresh_page(ctx)
     for sel in ["#sheet-num", "#sheet-calc"]:
@@ -186,17 +288,11 @@ def t_pad_layout(ctx):
           out.push(row.join(' '));
           return out;
         })()""" % sel)
-        assert rows == ["C ⌫ 000 ÷", "7 8 9 ×", "4 5 6 −", "1 2 3 ＋", "0 00 ＝"], (sel, rows)
+        assert rows == ["C ⌫ 000 ÷", "7 8 9 ×", "4 5 6 −", "1 2 3 ＋", "0 00 . ＝"], (sel, rows)
         # ＝ はグリッドの最後＝右下
         assert ev(p, f"document.querySelector('{sel} .npgrid').lastElementChild.dataset.op") == "＝", sel
-        # 0 は 00 のおよそ2倍幅
-        w = ev(p, f"""(() => {{
-          const g = document.querySelector('{sel} .npgrid');
-          const z = g.querySelector('.zero').getBoundingClientRect().width;
-          const d = [...g.querySelectorAll('.npk')].find(k => k.dataset.k === '00').getBoundingClientRect().width;
-          return [Math.round(z), Math.round(d)];
-        }})()""")
-        assert w[0] > w[1] * 1.8, (sel, w)
+        # 小数点キーがある（償却率・課税売上割合・単価の途中式で要る）
+        assert ev(p, f"""!!document.querySelector('{sel} .npgrid .npk[data-k="."]')"""), sel
         # 確定ボタンはグリッドの中に無い（＝の押し間違いを防ぐ）。表示行にだけ置く
         assert ev(p, f"document.querySelectorAll('{sel} .npgrid .okmini, {sel} .npgrid .okk, {sel} .npgrid .okwide').length") == 0, sel
         assert ev(p, f"!!document.querySelector('{sel} .npdisp .okmini')"), sel
@@ -488,7 +584,7 @@ def t_small(ctx):
     p = fresh_page(ctx)
     p.set_viewport_size({"width": 320, "height": 568})
     ev(p, "renderHome()")
-    assert ev(p, "document.scrollingElement.scrollWidth <= window.innerWidth")
+    assert ev(p, "document.querySelector('#app').scrollWidth <= window.innerWidth")   # スクロールするのは #app（html,body は overflow:hidden）
     r = ev(p, "(() => { const b = document.querySelector('#tabbar').getBoundingClientRect(); return b.bottom <= window.innerHeight && b.width > 0; })()")
     assert r, "タブバーが画面内に収まっていない"
 
