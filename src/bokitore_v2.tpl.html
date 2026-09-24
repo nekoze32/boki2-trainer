@@ -281,6 +281,10 @@
   .bgrid.one .bcell:last-child{border-bottom:none}
   .bcell .lbl{font-size:11px; color:var(--ink-soft)}
   .bcell .qty{font-size:12px; color:var(--ink-soft)}
+  .bcell .how{font-size:11px; color:var(--ink-soft); opacity:.8}
+  #b-boxes.fade .how{display:none}   /* 誘導のフェード：段階2・3では式（出し方）を隠し、見出しと空欄だけにする */
+  .drill .stg{font-size:11px; color:var(--accent); font-weight:700; margin-top:2px}
+  .fb .expl.stg{font-weight:700}
   .bcell .amt{font-size:15px; font-weight:600}
   .blank{display:inline-block; min-width:88px; border-bottom:2px solid var(--accent); text-align:right; padding:1px 4px; border-radius:4px 4px 0 0}
   .blank.active{background:var(--accent-soft)}
@@ -516,6 +520,7 @@
         <div class="setrow"><span>出題する分野</span><div class="seg" data-set="cat"><button data-v="both">両方</button><button data-v="商業">商業</button><button data-v="工業">工業</button></div></div>
         <div class="setrow"><span>1回の問題数</span><div class="seg" data-set="n"><button data-v="3">一駅3</button><button data-v="5">5</button><button data-v="10">10</button><button data-v="20">20</button></div></div>
         <div class="setrow"><span>テーマ</span><div class="seg" data-set="theme"><button data-v="system">自動</button><button data-v="light">ライト</button><button data-v="dark">ダーク</button></div></div>
+        <div class="setrow"><span>ドリルの誘導</span><div class="seg" data-set="guide"><button data-v="auto">自動</button><button data-v="1">あり</button><button data-v="2">見出し</button><button data-v="3">空欄</button></div></div>
         <div class="setrow"><span>試験日（本番）</span><input type="date" id="set-examdate" aria-label="試験日"></div>
         <button class="setrow link" id="btn-a2hs">ホーム画面に追加する方法</button>
         <button class="setrow link danger" id="btn-reset">学習データをリセット</button>
@@ -729,13 +734,14 @@ const esc = s => String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>
 /* ================= persistent state ================= */
 function getSettings(){
   const s = store.get("settings", null);
-  const d = {cat:"both", n:10, theme:"system", examDate:""};
+  const d = {cat:"both", n:10, theme:"system", examDate:"", guide:"auto"};   // guide: auto＝定着度で段階が上がる／"1" "2" "3"＝固定
   if(!isObj(s)) return d;
   return {
     cat: ["both","商業","工業"].includes(s.cat) ? s.cat : d.cat,
     n: [3,5,10,20].includes(s.n) ? s.n : d.n,
     theme: ["system","light","dark"].includes(s.theme) ? s.theme : d.theme,
     examDate: /^\d{4}-\d{2}-\d{2}$/.test(String(s.examDate || "")) ? s.examDate : "",
+    guide: ["auto","1","2","3"].includes(String(s.guide)) ? String(s.guide) : d.guide,
   };
 }
 let settings = getSettings();
@@ -920,7 +926,8 @@ function renderHome(){
   for(const d of DRILLS){
     const b = document.createElement("button"); b.className = "drill";
     const badge = dp && dp.id === d.id ? '<span class="cont">続きから</span>' : (drillDone[d.id] ? '<span class="done">✓ ' + nn(drillDone[d.id]) + '回</span>' : '');
-    b.innerHTML = '<span class="tag">' + esc(d.tag) + '</span><div class="body"><h3>' + esc(d.title) + '</h3><p>' + esc(d.sub) + '</p></div>' + badge;
+    const stg = dp && dp.id === d.id ? dp.stage : drillStage(d.id);
+    b.innerHTML = '<span class="tag">' + esc(d.tag) + '</span><div class="body"><h3>' + esc(d.title) + '</h3><p>' + esc(d.sub) + '</p><p class="stg">段階' + stg + ' ' + STAGE_LABEL[stg] + (settings.guide === "auto" ? "" : "（設定で固定）") + '</p></div>' + badge;
     b.addEventListener("click", () => startDrill(d.id));
     dl.appendChild(b);
   }
@@ -1234,8 +1241,8 @@ document.querySelectorAll(".seg button").forEach(b => b.addEventListener("click"
 $("#btn-reset").addEventListener("click", () => {
   pickChip("復習の記録・学習日・ドリルのクリア・模試の成績・メモをすべて消します。元に戻せません。", ["リセットする","やめる"], v => {
     if(v !== "リセットする") return;
-    ["progress","days","drills","drillpos","memo","session","a2hs","exam","examlog"].forEach(k => store.del(k));
-    progress = {}; days = {}; drillDone = {}; examLog = {}; $("#memo").value = "";
+    ["progress","days","drills","drillpos","drilllv","memo","session","a2hs","exam","examlog"].forEach(k => store.del(k));
+    progress = {}; days = {}; drillDone = {}; drillLv = {}; examLog = {}; $("#memo").value = "";
     toast("学習データをリセットしました"); renderHome();
   });
 });
@@ -1511,85 +1518,153 @@ function renderResult(){
 }
 
 /* ================= guided drills ================= */
-let drill = null, bi = 0, bDone = false;
+/* 誘導のフェード（A5）：同じドリルを 段階1「誘導あり」→ 段階2「見出しだけ」→ 段階3「空欄だけ」の3段階で解く
+   段階1＝STEPの問い（式つき）＋表の中の式＋光る欄の順に埋める（従来どおり）
+   段階2＝STEPは「どの表のどの欄か」だけ。表の中の式は消える。順番は決まっている
+   段階3＝表と空欄だけ。好きな欄からタップして埋める。誘導はミスして「ヒントを見る」を押したときだけ現れる
+   段階はドリルごとの箱（0〜3）で決まる：ミス0で完答→箱+1、ミス3回以上→箱−1。箱0＝段階1、箱1＝段階2、箱2以上＝段階3。設定で固定もできる */
+const STAGE_LABEL = {1:"誘導あり", 2:"見出しだけ", 3:"空欄だけ"};
+const DRILL_BOX_MAX = 3;
+function getDrillLv(){
+  const d = store.get("drilllv", null); if(!isObj(d)) return {};
+  const out = {};
+  for(const id in d){ const r = d[id]; if(isObj(r) && DRILLS.some(x => x.id === id)) out[id] = {box:Math.min(nn(r.box), DRILL_BOX_MAX), runs:nn(r.runs)}; }
+  return out;
+}
+let drillLv = getDrillLv();
+function drillBox(id){ return drillLv[id] ? drillLv[id].box : 0; }
+function stageOfBox(box){ return box <= 0 ? 1 : (box === 1 ? 2 : 3); }
+function drillStage(id){ return settings.guide === "auto" ? stageOfBox(drillBox(id)) : Number(settings.guide); }
+function bumpDrillBox(id, miss){
+  const box = drillBox(id);
+  const nb = miss === 0 ? Math.min(box + 1, DRILL_BOX_MAX) : (miss >= 3 ? Math.max(box - 1, 0) : box);
+  drillLv[id] = {box:nb, runs:nn(drillLv[id] && drillLv[id].runs) + 1}; store.set("drilllv", drillLv);
+  return nb;
+}
+
+let drill = null, bi = 0, bDone = false, bStage = 1, bCur = 0, bFilled = [], bMiss = 0, bRescue = "";
 function drillPos(){
   const d = store.get("drillpos", null);
   if(!isObj(d) || !DRILLS.some(x => x.id === d.id)) return null;
-  const dr = DRILLS.find(x => x.id === d.id); const b = nn(d.bi);
-  return b > 0 && b < dr.steps.length ? {id:d.id, bi:b} : null;
+  const dr = DRILLS.find(x => x.id === d.id);
+  const valid = dr.steps.map(x => x.key);
+  const keys = Array.isArray(d.keys) ? d.keys.filter((k, i, a) => valid.includes(k) && a.indexOf(k) === i) : valid.slice(0, nn(d.bi));   // 旧形式（bi だけ）も読める
+  const b = keys.length;
+  if(!(b > 0 && b < dr.steps.length)) return null;
+  return {id:d.id, bi:b, keys, miss:nn(d.miss), stage:[1,2,3].includes(d.stage) ? d.stage : 1};
+}
+function saveDrillPos(){ store.set("drillpos", {id:drill.id, bi, keys:bFilled.slice(), miss:bMiss, stage:bStage}); }
+function nextStepIdx(){ return drill.steps.findIndex(x => !bFilled.includes(x.key)); }
+function stepOf(key){ return drill.steps.findIndex(x => x.key === key); }
+function blankEl(key){ return document.querySelector('#b-boxes .blank[data-blank="' + key + '"]'); }
+// 段階2以降の見出し：「どの表の・どの欄か」だけ（式は出さない）。short＝欄名だけ（テンキーの見出し用）
+function blankLabel(s, short){
+  const el = blankEl(s.key); if(!el) return s.n;
+  const box = el.closest(".box"), cell = el.closest(".bcell");
+  const bt = box && box.querySelector(".bt") ? box.querySelector(".bt").textContent.replace(/（.*?）/g, "") : "";
+  const lbl = cell && cell.querySelector(".lbl") ? cell.querySelector(".lbl").textContent : "";
+  const u = s.type === "choice" ? "（有利／不利）" : (s.unit ? "（" + s.unit + "）" : "");
+  return (bt && !short ? bt + " › " : "") + lbl + u;
 }
 function startDrill(id){
-  drill = DRILLS.find(d => d.id === id); bi = 0; bDone = false;
-  $("#b-cat").textContent = drill.tag + " · " + drill.title;
+  drill = DRILLS.find(d => d.id === id); bi = 0; bDone = false; bFilled = []; bMiss = 0; bRescue = ""; bCur = 0;
+  const dp = drillPos();
+  bStage = (dp && dp.id === id) ? dp.stage : drillStage(id);   // 途中再開は始めたときの段階のまま（設定を変えても走っている回は変わらない）
+  $("#b-cat").textContent = drill.tag + " · " + drill.title + " · 段階" + bStage + " " + STAGE_LABEL[bStage];
   $("#b-title").textContent = "ドリル · " + drill.title.replace(/^.*・/, "");
   $("#b-text").innerHTML = drill.text;
   $("#b-boxes").innerHTML = drill.boxes;
-  $("#b-fb").className = "fb"; $("#b-hint").className = "hint"; $("#b-step").style.display = "";
-  const dp = drillPos();
+  $("#b-boxes").classList.toggle("fade", bStage >= 2);
+  $("#b-fb").className = "fb"; $("#b-hint").className = "hint"; $("#b-step").style.display = ""; $("#b-step").hidden = false;
   if(dp && dp.id === id){   // 途中から再開：埋めた欄を復元
-    bi = dp.bi;
-    for(const st of drill.steps.slice(0, bi)){
-      const target = document.querySelector('#b-boxes .blank[data-blank="' + st.key + '"]');
-      if(target){ target.textContent = fmtAns(st); target.className = "blank done num"; }
-    }
-  } else store.set("drillpos", {id, bi:0});
+    bFilled = dp.keys.slice(); bi = bFilled.length; bMiss = dp.miss;
+    for(const k of bFilled){ const st = drill.steps[stepOf(k)], target = blankEl(k); if(target){ target.textContent = fmtAns(st); target.className = "blank done num"; } }
+  }
+  saveDrillPos();
+  bCur = nextStepIdx();
   show("drill"); renderB();
 }
 function renderB(){
-  const s = drill.steps[bi];
+  if(bStage < 3 || bCur < 0 || bFilled.includes(drill.steps[bCur].key)) bCur = nextStepIdx();
+  const s = drill.steps[bCur];
   $("#b-prog").style.width = (bi / drill.steps.length * 100) + "%";
   $("#b-count").textContent = (bi+1) + "/" + drill.steps.length;
-  $("#b-step-n").textContent = s.n; $("#b-step-q").textContent = s.q;
   $("#b-hint").className = "hint"; $("#b-hint").textContent = "💡 " + s.hint;
-  document.querySelectorAll("#b-boxes .blank").forEach(b => b.classList.remove("active"));
-  const target = document.querySelector('#b-boxes .blank[data-blank="' + s.key + '"]');
-  if(target) target.classList.add("active");
+  const rescue = bStage === 3 && bRescue === s.key;
+  document.querySelectorAll("#b-boxes .blank").forEach(b => {
+    b.classList.remove("active");
+    if(bStage === 3 && !b.classList.contains("done") && b.dataset.blank !== s.key){ b.textContent = "？"; b.classList.remove("wrong"); }   // 選び直した欄の誤答表示は消す
+  });
+  $("#b-step-n").textContent = s.n;
+  $("#b-step-q").textContent = (bStage === 1 || rescue) ? s.q : blankLabel(s);
+  $("#b-step").hidden = bStage === 3 && !rescue;   // 段階3：表と空欄だけ。誘導は「ヒントを見る」を押したときだけ
+  if(bStage < 3 || rescue){ const target = blankEl(s.key); if(target) target.classList.add("active"); }
   updateCta();
 }
 function fmtAns(s){ if(s.type === "choice") return s.a; if(s.unit === "円") return yen(s.a); if(s.unit === "%") return s.a + "%"; return s.a.toLocaleString("ja-JP"); }
+function stageNote(nb){
+  const next = drillStage(drill.id);
+  let t = "誘導「" + STAGE_LABEL[bStage] + "」でミス " + bMiss + " 回。";
+  if(settings.guide !== "auto") t += "設定で「" + STAGE_LABEL[next] + "」に固定中（自動にすると箱 " + nb + " → 「" + STAGE_LABEL[stageOfBox(nb)] + "」）";
+  else if(next > bStage) t += "次はひとつ薄い「" + STAGE_LABEL[next] + "」で。";
+  else if(next < bStage) t += "次はひとつ戻して「" + STAGE_LABEL[next] + "」で。";
+  else t += "次も「" + STAGE_LABEL[next] + "」で（ミス0で完答すると薄くなります）。";
+  return '<p class="expl stg">' + esc(t) + '</p>';
+}
 function stepResult(s, v){
   const ok = v === s.a;
+  const target = blankEl(s.key);
   if(ok){
-    const target = document.querySelector('#b-boxes .blank[data-blank="' + s.key + '"]');
     if(target){ target.textContent = fmtAns(s); target.className = "blank done num"; }
-    bi++;
-    store.set("drillpos", {id:drill.id, bi});
+    if(!bFilled.includes(s.key)) bFilled.push(s.key);
+    bi = bFilled.length; if(bRescue === s.key) bRescue = "";
+    saveDrillPos();
     if(bi >= drill.steps.length){
       bDone = true; $("#b-prog").style.width = "100%"; store.del("drillpos");
       drillDone[drill.id] = nn(drillDone[drill.id]) + 1; store.set("drills", drillDone);
       const t = todayStr(); days[t] = nn(days[t]) + 1; store.set("days", days);
+      const nb = bumpDrillBox(drill.id, bMiss);
       const fb = $("#b-fb"); fb.className = "fb on good";
-      $("#b-fb-title").textContent = "完答！"; $("#b-fb-body").innerHTML = drill.final;
+      $("#b-fb-title").textContent = "完答！"; $("#b-fb-body").innerHTML = drill.final + stageNote(nb);
       $("#b-step").style.display = "none"; updateCta();
-    } else renderB();
+    } else { bCur = nextStepIdx(); renderB(); }
   } else {
+    bMiss++; saveDrillPos();
     // 入力は受け取った、と分かるように：欄に入れた値を赤で見せてから、ヒントを出す
-    const target = document.querySelector('#b-boxes .blank[data-blank="' + s.key + '"]');
-    if(target){ target.textContent = (s.type === "choice") ? v : (s.unit === "円" ? yen(v) : (s.unit === "%" ? v + "%" : v.toLocaleString("ja-JP"))); target.className = "blank active wrong num"; }
-    updateCta();
     const shown = (s.type === "choice") ? v : (s.unit === "円" ? yen(v) : (s.unit === "%" ? v + "%" : v.toLocaleString("ja-JP")));
-    $("#miss-body").dataset.entered = s.n + " に「" + shown + "」と入れました。";
+    if(target){ target.textContent = shown; target.className = "blank active wrong num"; }
+    updateCta();
+    $("#miss-body").dataset.entered = (bStage === 1 ? s.n : blankLabel(s, true)) + " に「" + shown + "」と入れました。";
     $("#miss-body").textContent = $("#miss-body").dataset.entered + " もう一度考えてみるか、ヒントを見て進みましょう。";
     $("#miss-hint").textContent = "💡 " + s.hint; $("#miss-hint").hidden = true; $("#miss-hint-btn").hidden = false;
     openSheet($("#sheet-miss"));
   }
 }
 $("#miss-hint-btn").addEventListener("click", () => {
+  if(bStage === 3){ bRescue = drill.steps[bCur].key; renderB(); }   // 段階3：この欄だけ誘導（STEPの問い）を出す
   $("#miss-hint").hidden = false; $("#miss-hint-btn").hidden = true; $("#b-hint").className = "hint on";
   $("#miss-body").textContent = $("#miss-body").dataset.entered + " ヒントを手がかりに、もう一度入力しましょう。";
 });
 $("#miss-retry").addEventListener("click", () => { closeSheet(); answerB(); });
 function answerB(){
-  const s = drill.steps[bi];
-  if(s.type === "choice") pickChip(s.n + "：どちら？", s.options, v => stepResult(s, v));
-  else askNumber(s.n + "（" + s.unit + "）", v => stepResult(s, v), {allowZero:true});
+  if(bCur < 0 || bFilled.includes(drill.steps[bCur].key)) bCur = nextStepIdx();
+  const s = drill.steps[bCur];
+  const label = bStage === 1 ? s.n : blankLabel(s, true);
+  if(s.type === "choice") pickChip(label + "：どちら？", s.options, v => stepResult(s, v));
+  else askNumber(bStage === 1 ? s.n + "（" + s.unit + "）" : label, v => stepResult(s, v), {allowZero:true});
 }
-// 空欄そのものをタップしても入力できる（いま埋める欄だけ反応）
+// 空欄そのものをタップしても入力できる（段階1・2はいま埋める欄だけ反応、段階3はどの空欄でも）
 $("#b-boxes").addEventListener("click", e => {
   const b = e.target.closest(".blank");
   if(!b || bDone) return;
+  if(bStage === 3){
+    if(b.classList.contains("done")){ toast("この欄はもう埋まっています"); return; }
+    const i = stepOf(b.dataset.blank); if(i < 0) return;
+    if(i !== bCur){ bRescue = ""; bCur = i; renderB(); }
+    b.classList.add("active"); answerB(); return;
+  }
   if(b.classList.contains("active")) answerB();
-  else toast("いまは「" + drill.steps[bi].n + "」の欄（光っている欄）を入力する番です");   // 無反応に見せない
+  else toast("いまは「" + drill.steps[bCur].n + "」の欄（光っている欄）を入力する番です");   // 無反応に見せない
 });
 
 /* ================= 模試（CBT） ================= */
@@ -1919,7 +1994,7 @@ function updateCta(){
   if(mode === "quiz"){
     if(answered){ cta.textContent = qi+1 >= queue.length ? "結果を見る" : "次の問題へ"; cta.disabled = false; }
     else { const dt = entry.debit.reduce((s,l)=>s+l[1],0), ct = entry.credit.reduce((s,l)=>s+l[1],0); cta.textContent = "判定する"; cta.disabled = !(entry.debit.length && entry.credit.length && dt === ct); }
-  } else if(mode === "drill"){ cta.textContent = bDone ? "ホームへ戻る" : "この欄に入力する"; cta.disabled = false; }
+  } else if(mode === "drill"){ cta.textContent = bDone ? "ホームへ戻る" : (bStage === 3 ? "空欄をタップして入力" : "この欄に入力する"); cta.disabled = false; }
   else if(mode === "exam"){
     cta.textContent = exSec >= exam.sections.length ? "答案を提出する"
       : (exSec === exam.sections.length - 1 ? "見直しへ" : "次の大問へ");

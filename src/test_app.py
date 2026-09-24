@@ -59,7 +59,18 @@ window.__t = {
   },
   cta(){ document.querySelector('#cta').click(); },
   chip(text){ const c = [...document.querySelectorAll('#acct-chips .chip')].find(c => c.textContent === text); if(!c) throw new Error('chip missing: ' + text); c.click(); },
-  fresh(){ localStorage.clear(); progress = {}; days = {}; drillDone = {}; examLog = {}; renderHome(); },
+  fresh(){ localStorage.clear(); progress = {}; days = {}; drillDone = {}; drillLv = {}; examLog = {}; renderHome(); },
+  // ---- ドリル（誘導のフェード）----
+  drillRun(id, vals){   // 正解を順に入れて完答する。vals＝キー→値（省略時は steps の正解）
+    startDrill(id);
+    for(const st of drill.steps){
+      const v = vals && (st.key in vals) ? vals[st.key] : st.a;
+      this.cta();
+      if(st.type === 'choice') this.chip(v); else { this.keys(String(v)); this.press('OK'); }
+    }
+  },
+  howShown(){ return [...document.querySelectorAll('#b-boxes .how')].filter(e => getComputedStyle(e).display !== 'none').length; },
+  stepShown(){ return getComputedStyle(document.querySelector('#b-step')).display !== 'none'; },
 
   // ---- 模試 ----
   fld(key){ const el = document.querySelector('#e-body .fld[data-k="' + key + '"]'); if(!el) throw new Error('fld missing: ' + key); el.click(); },
@@ -519,7 +530,8 @@ def t_drill(ctx):
     assert ev(p, "document.querySelector('#sheet-num').classList.contains('on')"), "「もう一度入力」でテンキーが開かない"
     ev(p, "closeSheet()")
     ev(p, "__t.cta(); __t.keys('168000'); __t.press('OK')")
-    assert ev(p, "store.get('drillpos')") == {"id": "D1", "bi": 2}
+    dp = ev(p, "store.get('drillpos')")
+    assert dp["id"] == "D1" and dp["bi"] == 2 and dp["keys"] == ["convQty", "matEnd"] and dp["miss"] == 1 and dp["stage"] == 1, dp
     p.reload(); p.wait_for_function("typeof PROBLEMS !== 'undefined'"); p.evaluate(HELPERS)
     assert "続き" in ev(p, "document.querySelector('#h-next-drill-t').textContent")
     ev(p, "document.querySelector('#h-next-drill').click()")
@@ -539,6 +551,135 @@ def t_drill(ctx):
     assert ev(p, "document.querySelector('#b-fb-title').textContent") == "完答！"
     ev(p, "goHome()"); p.wait_for_function("mode === 'home'")
     assert ev(p, "document.querySelectorAll('#h-collect .fig.on').length") == 2
+
+
+@test("誘導のフェード：ミス0で完答するたびに 誘導あり→見出しだけ→空欄だけ と薄くなり、式・STEPの問い・光る欄が段階ごとに消える")
+def t_fade_stages(ctx):
+    p = fresh_page(ctx)
+    # 段階1：STEPの問い（式つき）・表の中の式・光る欄
+    ev(p, "startDrill('D1')")
+    assert ev(p, "bStage") == 1 and "誘導あり" in ev(p, "document.querySelector('#b-cat').textContent")
+    assert ev(p, "__t.howShown()") > 0, "段階1なのに表の式が見えない"
+    assert ev(p, "__t.stepShown()") and "400個" in ev(p, "document.querySelector('#b-step-q').textContent")
+    assert ev(p, "document.querySelectorAll('#b-boxes .blank.active').length") == 1
+    assert "段階1 誘導あり" in ev(p, "document.querySelector('#h-drills .drill .stg').textContent")
+    ev(p, "__t.drillRun('D1')")
+    assert ev(p, "bDone") and ev(p, "drillLv.D1.box") == 1 and ev(p, "store.get('drilllv').D1.box") == 1
+    note = ev(p, "document.querySelector('#b-fb-body .stg').textContent")
+    assert "ミス 0 回" in note and "見出しだけ" in note, note
+    # 段階2：STEPは「どの表のどの欄か」だけ。式は消える。順番はある
+    ev(p, "goHome()"); p.wait_for_function("mode === 'home'")
+    assert "段階2 見出しだけ" in ev(p, "document.querySelector('#h-drills .drill .stg').textContent")
+    ev(p, "startDrill('D1')")
+    assert ev(p, "bStage") == 2 and "見出しだけ" in ev(p, "document.querySelector('#b-cat').textContent")
+    assert ev(p, "__t.howShown()") == 0, "段階2なのに表の式が見えている"
+    q = ev(p, "document.querySelector('#b-step-q').textContent")
+    assert ev(p, "__t.stepShown()") and "月末仕掛品" in q and "（個）" in q and "×" not in q and "50%" not in q, q
+    assert ev(p, "document.querySelectorAll('#b-boxes .blank.active').length") == 1
+    ev(p, "[...document.querySelectorAll('#b-boxes .blank')].find(b => !b.classList.contains('active')).click()")
+    assert "STEP 1" in ev(p, "document.querySelector('#toast').textContent"), "段階2で順番を飛ばせてしまう"
+    ev(p, "__t.cta()")
+    assert "月末仕掛品" in ev(p, "document.querySelector('#np-ctx').textContent"), "テンキーの見出しが欄名になっていない"
+    ev(p, "closeSheet(); __t.drillRun('D1')")
+    assert ev(p, "drillLv.D1.box") == 2
+    # 段階3：表と空欄だけ。STEPカードも光る欄も無く、どの空欄からでも埋められる
+    ev(p, "goHome()"); p.wait_for_function("mode === 'home'")
+    ev(p, "startDrill('D1')")
+    assert ev(p, "bStage") == 3 and "空欄だけ" in ev(p, "document.querySelector('#b-cat').textContent")
+    assert not ev(p, "__t.stepShown()"), "段階3なのにSTEPカードが見えている"
+    assert ev(p, "__t.howShown()") == 0 and ev(p, "document.querySelectorAll('#b-boxes .blank.active').length") == 0
+    assert ev(p, "document.querySelector('#cta').textContent") == "空欄をタップして入力"
+    ev(p, "document.querySelector('#b-boxes .blank[data-blank=\"final\"]').click()")
+    assert ev(p, "document.querySelector('#sheet-num').classList.contains('on')"), "段階3で好きな欄をタップできない"
+    ev(p, "__t.keys('1632000'); __t.press('OK')")
+    assert ev(p, "bi") == 1 and ev(p, "document.querySelector('#b-boxes .blank[data-blank=\"final\"]').classList.contains('done')")
+    assert ev(p, "store.get('drillpos').keys") == ["final"]
+    # 途中再開：段階3のまま、埋めた欄（順不同）が戻る
+    p.reload(); p.wait_for_function("typeof PROBLEMS !== 'undefined'"); p.evaluate(HELPERS)
+    ev(p, "document.querySelector('#h-next-drill').click()")
+    assert ev(p, "bStage") == 3 and ev(p, "bi") == 1 and ev(p, "document.querySelector('#b-boxes .blank[data-blank=\"final\"]').classList.contains('done')")
+    # 埋まった欄はタップしても開かない。ミス→「ヒントを見る」で、その欄だけSTEPの問いが現れる
+    ev(p, "document.querySelector('#b-boxes .blank[data-blank=\"final\"]').click()")
+    assert not ev(p, "document.querySelector('#sheet-num').classList.contains('on')")
+    ev(p, "document.querySelector('#b-boxes .blank[data-blank=\"matEnd\"]').click(); __t.keys('1'); __t.press('OK')")
+    assert ev(p, "document.querySelector('#sheet-miss').classList.contains('on')") and "月末仕掛品" in ev(p, "document.querySelector('#miss-body').textContent")
+    assert not ev(p, "__t.stepShown()")
+    ev(p, "document.querySelector('#miss-hint-btn').click()")
+    assert ev(p, "__t.stepShown()") and "平均法" in ev(p, "document.querySelector('#b-step-q').textContent"), "ヒントを求めたのに誘導が出ない"
+    ev(p, "closeSheet(); document.querySelector('#b-boxes .blank[data-blank=\"matEnd\"]').click(); __t.keys('168000'); __t.press('OK')")
+    assert not ev(p, "__t.stepShown()"), "正解したのに誘導が消えない"
+    # ミス3回以上で完答 → 箱がひとつ戻り、次回は「見出しだけ」
+    ev(p, "__t.cta(); __t.keys('1'); __t.press('OK'); closeSheet(); __t.cta(); __t.keys('1'); __t.press('OK'); closeSheet()")
+    assert ev(p, "bMiss") == 3
+    for k in ["convQty", "matDone", "convEnd", "convDone", "endTotal"]:
+        ev(p, f"document.querySelector('#b-boxes .blank[data-blank=\"{k}\"]').click(); const st = drill.steps.find(x => x.key === '{k}'); __t.keys(String(st.a)); __t.press('OK')")
+    assert ev(p, "bDone") and ev(p, "drillLv.D1.box") == 1 and ev(p, "drillLv.D1.runs") == 3
+    assert "戻して" in ev(p, "document.querySelector('#b-fb-body .stg').textContent")
+    ev(p, "goHome()"); p.wait_for_function("mode === 'home'")
+    assert ev(p, "drillStage('D1')") == 2 and ev(p, "drillDone.D1") == 3
+    assert not p._errors, p._errors
+
+@test("誘導のフェード：設定で段階を固定できる・走っている回は途中で変わらない・リセットで箱が消える")
+def t_fade_setting(ctx):
+    p = fresh_page(ctx)
+    ev(p, "document.querySelector('#tabbar button[data-tab=\"record\"]').click()")
+    assert ev(p, "[...document.querySelectorAll('.seg[data-set=\"guide\"] button')].map(b => b.dataset.v)") == ["auto", "1", "2", "3"]
+    ev(p, "document.querySelector('.seg[data-set=\"guide\"] button[data-v=\"3\"]').click()")
+    assert ev(p, "settings.guide") == "3" and ev(p, "store.get('settings').guide") == "3"
+    assert "段階3 空欄だけ（設定で固定）" in ev(p, "document.querySelector('#h-drills .drill .stg').textContent")
+    ev(p, "startDrill('D4')")
+    assert ev(p, "bStage") == 3 and not ev(p, "__t.stepShown()"), "設定で固定した段階で始まらない"
+    ev(p, "document.querySelector('#b-boxes .blank[data-blank=\"cmUnit\"]').click(); __t.keys('800'); __t.press('OK')")
+    # 途中で設定を変えても、走っている回の段階はそのまま（再開しても同じ）
+    ev(p, "settings.guide = '1'; saveSettings()")
+    p.reload(); p.wait_for_function("typeof PROBLEMS !== 'undefined'"); p.evaluate(HELPERS)
+    ev(p, "document.querySelector('#h-next-drill').click()")
+    assert ev(p, "bStage") == 3 and ev(p, "bi") == 1
+    for k in ["cmRate", "bepSales", "bepQty", "targetSales", "safety"]:
+        ev(p, f"document.querySelector('#b-boxes .blank[data-blank=\"{k}\"]').click(); const st = drill.steps.find(x => x.key === '{k}'); __t.keys(String(st.a)); __t.press('OK')")
+    assert ev(p, "bDone") and ev(p, "drillLv.D4.box") == 1
+    assert "固定中" in ev(p, "document.querySelector('#b-fb-body .stg').textContent")
+    # 固定「あり」なら箱に関係なく段階1
+    ev(p, "goHome()"); p.wait_for_function("mode === 'home'")
+    ev(p, "startDrill('D4')")
+    assert ev(p, "bStage") == 1 and ev(p, "__t.howShown()") > 0
+    # 自動に戻すと箱1＝段階2。リセットで箱も消えて段階1に戻る
+    ev(p, "goHome()"); p.wait_for_function("mode === 'home'")
+    ev(p, "document.querySelector('.seg[data-set=\"guide\"] button[data-v=\"auto\"]').click()")
+    assert ev(p, "drillStage('D4')") == 2
+    ev(p, "document.querySelector('#btn-reset').click(); __t.chip('リセットする')")
+    assert ev(p, "drillStage('D4')") == 1 and ev(p, "store.get('drilllv')") is None
+    # 壊れた段階データは既定に戻る
+    ev(p, "store.set('drilllv', {D1:{box:99}, ZZ:{box:1}, D2:'x'}); drillLv = getDrillLv()")
+    assert ev(p, "drillLv") == {"D1": {"box": 3, "runs": 0}}
+    ev(p, "store.set('drillpos', {id:'D1', bi:2, keys:['final','nope','final'], miss:-1, stage:9})")
+    assert ev(p, "drillPos()") == {"id": "D1", "bi": 1, "keys": ["final"], "miss": 0, "stage": 1}
+    assert not p._errors, p._errors
+
+@test("誘導のフェード：設定の行が320px幅でもはみ出さない・4本すべて段階2で式が消え段階3で埋め切れる")
+def t_fade_all_drills(ctx):
+    p = fresh_page(ctx)
+    p.set_viewport_size({"width": 320, "height": 568})
+    ev(p, "document.querySelector('#tabbar button[data-tab=\"record\"]').click()")
+    assert ev(p, "document.querySelector('#app').scrollWidth <= window.innerWidth")
+    r = ev(p, "(() => { const b = document.querySelector('.seg[data-set=\"guide\"]').getBoundingClientRect(); return b.right <= window.innerWidth && b.left >= 0; })()")
+    assert r, "「ドリルの誘導」の設定が画面からはみ出す"
+    for d in ["D1", "D2", "D3", "D4"]:
+        ev(p, f"settings.guide = '2'; saveSettings(); startDrill('{d}')")
+        assert ev(p, "__t.howShown()") == 0 and ev(p, "bStage") == 2
+        n_how = ev(p, "document.querySelectorAll('#b-boxes .how').length")
+        assert n_how > 0, d + " に式（how）が1つも無い"
+        ev(p, f"settings.guide = '3'; saveSettings(); goHome(); startDrill('{d}')")
+        assert ev(p, "bStage") == 3 and not ev(p, "__t.stepShown()")
+        # 逆順にタップして全部埋める
+        ev(p, """(() => { for(const st of [...drill.steps].reverse()){
+            document.querySelector('#b-boxes .blank[data-blank="' + st.key + '"]').click();
+            if(st.type === 'choice') __t.chip(st.a); else { __t.keys(String(st.a)); __t.press('OK'); }
+          } })()""")
+        assert ev(p, "bDone") and ev(p, "bMiss") == 0, d
+        ev(p, "goHome()"); p.wait_for_function("mode === 'home'")
+    assert ev(p, "document.querySelectorAll('#h-collect .fig.on').length") == 4
+    assert not p._errors, p._errors
 
 @test("タブ・次の未踏論点・戻る操作（履歴）・設定・リセット確認")
 def t_nav(ctx):
@@ -883,7 +1024,7 @@ def t_order(ctx):
     def five(setup, start):
         seen_order, seen_set = set(), set()
         for _ in range(5):
-            ev(p, "localStorage.clear(); progress={}; days={}; drillDone={}; examLog={};")
+            ev(p, "localStorage.clear(); progress={}; days={}; drillDone={}; drillLv={}; examLog={};")
             ev(p, setup); ev(p, start)
             q = ev(p, "queue")
             seen_order.add(",".join(q)); seen_set.add(frozenset(q))
@@ -901,7 +1042,7 @@ def t_order(ctx):
              "PROBLEMS.slice(3,20).forEach(q=>{progress[q.id]={box:2, due:t, seen:2, wrong:0};}); "
              "store.set('progress',progress); renderHome();")
     for _ in range(3):
-        ev(p, "localStorage.clear(); progress={}; days={}; drillDone={}; examLog={};")
+        ev(p, "localStorage.clear(); progress={}; days={}; drillDone={}; drillLv={}; examLog={};")
         ev(p, seed2); ev(p, "startSession('today')")
         head = ev(p, "queue").__getitem__(slice(0, 3))
         assert set(head) == {"S01", "S02", "S03"}, "遅れている問題が先に出ていない: " + str(head)
