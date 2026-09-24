@@ -818,9 +818,9 @@ def t_exam_m3(ctx):
     ev(p, "goHome()"); p.wait_for_function("mode === 'home'")
     ev(p, """startExam('M3', true);
              const P = blockPrefix(0, 3);
-             exAns[P+'_d0a']='減価償却費'; exAns[P+'_d0m']=33600; exAns[P+'_d1a']='備品減価償却累計額'; exAns[P+'_d1m']=897600;
-             exAns[P+'_d2a']='貯蔵品'; exAns[P+'_d2m']=50000; exAns[P+'_d3a']='固定資産除却損'; exAns[P+'_d3m']=252400;
-             exAns[P+'_c0a']='備品減価償却累計額'; exAns[P+'_c0m']=33600; exAns[P+'_c1a']='備品'; exAns[P+'_c1m']=1200000;
+             exAns[P+'_d0a']='減価償却費'; exAns[P+'_d0m']=61440; exAns[P+'_d1a']='備品減価償却累計額'; exAns[P+'_d1m']=647040;
+             exAns[P+'_d2a']='貯蔵品'; exAns[P+'_d2m']=50000; exAns[P+'_d3a']='固定資産除却損'; exAns[P+'_d3m']=502960;
+             exAns[P+'_c0a']='備品減価償却累計額'; exAns[P+'_c0m']=61440; exAns[P+'_c1a']='備品'; exAns[P+'_c1m']=1200000;
              submitExam(true)""")
     assert ev(p, "exResult.secs[0].got") == 4, "二段階仕訳の別解が採点で落ちる"
     assert not p._errors, p._errors
