@@ -276,14 +276,9 @@ manifest = json.dumps({
 }, ensure_ascii=False)
 with open(os.path.join(HERE, "..", "manifest.webmanifest"), "w", encoding="utf-8", newline="\n") as f:
     f.write(manifest)
-# β：URLを知っている人だけに配る間は検索避け。
-# robots.txt で巡回を止めると noindex が読まれず、外部リンク経由でURLだけ検索に載ることがある。
-# そこで「巡回は許可 → noindex を読ませて確実に除外」の組み合わせにする。
-# 一般公開に切り替えるときは、この robots.txt の生成と下の noindex 行を消す。
-with open(os.path.join(HERE, "..", "robots.txt"), "w", encoding="utf-8", newline="\n") as f:
-    f.write("# β版：検索結果には出さない（noindex を読ませるため巡回は許可）\nUser-agent: *\nAllow: /\n")
-head_extra = ('<meta name="robots" content="noindex, nofollow">\n'
-              '<meta name="description" content="簿記2級の仕訳と原価計算を、電車で片手で。電卓とメモ常駐の演習アプリ。">\n'
+# 2026-09-25 一般公開（ブログ記事 2026-09-27 公開に合わせて検索避けを解除）。
+# β期間の robots.txt 生成と noindex は削除した。
+head_extra = ('<meta name="description" content="簿記2級の仕訳と原価計算を、電車で片手で。電卓とメモ常駐の演習アプリ。">\n'
               '<meta property="og:title" content="ボキトレイン — 一駅一問。鉛筆も紙も出さずに、片手で簿記2級">\n'
               '<meta property="og:description" content="仕訳60問＋ボックス図で解く原価計算。下書き用紙を画面にしました。電卓とメモは常駐、復習は忘却曲線で自動。">\n'
               '<meta property="og:type" content="website">\n'

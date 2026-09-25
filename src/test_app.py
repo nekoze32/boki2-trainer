@@ -986,14 +986,14 @@ def t_icons(ctx):
         assert tag in html, "index.html に " + tag + " が無い"
 
 
-@test("β公開のしたく：検索避け・免責・記録の扱い・版番号・フィードバック導線")
+@test("一般公開のしたく：検索避けが無い・免責・記録の扱い・版番号・フィードバック導線")
 def t_beta(ctx):
     import os
     root = os.path.abspath(os.path.join(HERE, ".."))
-    robots = open(os.path.join(root, "robots.txt"), encoding="utf-8").read()
-    assert "Allow: /" in robots and "Disallow: /" not in robots, "noindex を読ませるため巡回は許可しておく"
+    # 2026-09-25 一般公開：β期間の robots.txt と noindex は無いこと
+    assert not os.path.exists(os.path.join(root, "robots.txt")), "β期間の robots.txt が残っている"
     html = open(os.path.join(root, "index.html"), encoding="utf-8").read()
-    assert 'name="robots" content="noindex, nofollow"' in html, "noindex が無い"
+    assert 'content="noindex' not in html, "noindex が残っている（一般公開済み）"
     p = fresh_page(ctx)
     # 版番号：ビルド日が入っていて dev のままでない
     import re as _re
