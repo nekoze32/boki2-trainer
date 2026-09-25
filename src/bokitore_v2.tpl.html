@@ -263,7 +263,10 @@
   .npdisp .val{font-size:26px; font-weight:600; min-height:34px}
   .npgrid{display:grid; grid-template-columns:repeat(4,1fr); gap:8px}
   .npk{height:52px; border-radius:12px; background:var(--surface2); border:1px solid var(--line); font-size:19px; font-weight:500}
-  .npk:active{background:var(--accent-soft)}
+  .npk:active,.npk.hit{background:var(--accent-soft)}
+  /* 物理キーボードの案内はマウスのある端末（PC）にだけ出す。入力そのものは端末を問わず受け付ける */
+  .kbdhint{display:none; margin-top:8px; font-size:11px; color:var(--ink-soft); text-align:center}
+  @media (hover:hover) and (pointer:fine){ .kbdhint{display:block} }
   .npk.op{background:var(--surface); color:var(--accent); font-weight:700}
   .npk.dot{font-weight:700}
   .npdelbtn{width:100%; margin-top:10px; height:44px; border-radius:12px; color:var(--ng-ink); background:var(--ng-bg); border:1px solid var(--ng-line); font-weight:700; font-size:14px; display:none}
@@ -651,6 +654,7 @@
       <button class="npk num">1</button><button class="npk num">2</button><button class="npk num">3</button><button class="npk op" data-op="＋">＋</button>
       <button class="npk num">0</button><button class="npk num" data-k="00">00</button><button class="npk num dot" data-k=".">.</button><button class="npk op" data-op="＝">＝</button>
     </div>
+    <p class="kbdhint">⌨ キーボードでも打てます　Enter＝計算→確定　Esc＝閉じる</p>
     <button class="npdelbtn" id="np-del">この行を削除</button>
   </div>
 </div>
@@ -676,7 +680,7 @@
       <button class="npk num">1</button><button class="npk num">2</button><button class="npk num">3</button><button class="npk op" data-op="＋">＋</button>
       <button class="npk num">0</button><button class="npk num" data-k="00">00</button><button class="npk num dot" data-k=".">.</button><button class="npk op" data-op="＝">＝</button>
     </div>
-
+    <p class="kbdhint">⌨ キーボードでも打てます　Enter＝計算→メモへ　Esc＝閉じる</p>
   </div>
 </div>
 
@@ -1201,6 +1205,45 @@ wirePad("#sheet-calc", cpCalc, () => {
   memo.value = (memo.value ? memo.value + "\n" : "") + cpCalc.value(true).toLocaleString("ja-JP", {maximumFractionDigits:2});
   store.set("memo", memo.value);
   setMemoOpen(true);   // 書いた先が見えないと、入ったのか分からない
+});
+/* ---- 物理キーボード ----
+   PC（や外付けキーボードをつないだタブレット）では、電卓シートが開いている間は数字キー・テンキーでも打てる。
+   端末の判別はしない：キーボードが無ければ keydown が来ないだけなので、分ける理由がない。
+   押したキーは画面のボタンを click() して通す＝タップと同じ経路で計算し、押した感触もボタンに出す。 */
+const KBD_OPS = {"+":"＋", "-":"−", "*":"×", "/":"÷", "=":"＝"};
+const KBD_CODES = {NumpadAdd:"＋", NumpadSubtract:"−", NumpadMultiply:"×", NumpadDivide:"÷", NumpadDecimal:"."};
+function kbdLabel(e, calc){
+  // テンキーは NumLock の状態で key が「End」「↓」などに化けるので、code（キーの位置）で読む
+  const m = /^Numpad([0-9])$/.exec(e.code || "");
+  if(m) return m[1];
+  if(KBD_CODES[e.code]) return KBD_CODES[e.code];
+  const k = e.key;
+  if(/^[0-9]$/.test(k)) return k;
+  if(k === ".") return ".";
+  if(KBD_OPS[k]) return KBD_OPS[k];
+  if(k === "Backspace") return "⌫";
+  if(k === "Delete") return "C";
+  // Enter：計算の途中なら＝、答えが出ていれば確定（1回目で答えを見て、2回目で入れる）
+  if(k === "Enter") return (calc.op !== null && calc.cur !== "") ? "＝" : "OK";
+  return null;
+}
+document.addEventListener("keydown", e => {
+  if(e.ctrlKey || e.metaKey || e.altKey || e.isComposing) return;
+  const root = openSheetEl === $("#sheet-num") ? "#sheet-num" : openSheetEl === $("#sheet-calc") ? "#sheet-calc" : null;
+  if(!root) return;
+  const tg = e.target;
+  if(tg && (tg.tagName === "TEXTAREA" || tg.tagName === "INPUT" || tg.isContentEditable)) return;   // メモを書いている間は奪わない
+  // ✕・削除・数字チップなど電卓キー以外のボタンにフォーカスがある時の Enter／Space は、そのボタンの操作に任せる
+  if((e.key === "Enter" || e.key === " ") && tg && tg.tagName === "BUTTON" && !tg.classList.contains("npk")) return;
+  const calc = root === "#sheet-num" ? npCalc : cpCalc;
+  const label = kbdLabel(e, calc);
+  if(label === null) return;
+  const btn = label === "OK" ? document.querySelector(root + " .okmini")
+    : [...document.querySelectorAll(root + " .npgrid .npk")].find(b => (b.dataset.op || b.dataset.k || b.textContent.trim()) === label);
+  if(!btn) return;
+  e.preventDefault();   // フォーカス中のボタンへの Enter 二重押し・Backspace の「戻る」を止める
+  btn.classList.add("hit"); setTimeout(() => btn.classList.remove("hit"), 120);
+  btn.click();
 });
 const savedMemo = store.get("memo", "");
 $("#memo").value = typeof savedMemo === "string" ? savedMemo : "";

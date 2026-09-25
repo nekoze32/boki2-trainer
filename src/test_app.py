@@ -317,6 +317,69 @@ def t_pad_layout(ctx):
     assert ev(p, "entry.debit[0][1]") == 12500
     assert not p._errors, p._errors
 
+@test("キーボード：電卓を数字キー・テンキーで打てる（Enter＝計算→確定・メモを書く間は奪わない）")
+def t_keyboard(ctx):
+    p = fresh_page(ctx)
+    val = "document.querySelector('#np-val').textContent"
+    ev(p, "document.querySelector('#btn-today').click()")
+    ev(p, """document.querySelector('.addline[data-side="debit"]').click();
+             document.querySelectorAll('#acct-chips .chip')[0].click();""")
+    for k in "800*450": p.keyboard.press(k)
+    assert ev(p, val) == "450"
+    p.keyboard.press("Enter")                      # 1回目＝計算
+    assert ev(p, val) == "360,000"
+    assert ev(p, "document.querySelector('#sheet-num').classList.contains('on')"), "1回目の Enter で確定してしまった"
+    p.keyboard.press("Enter")                      # 2回目＝確定
+    assert ev(p, "entry.debit[0][1]") == 360000
+    assert not ev(p, "document.querySelector('#sheet-num').classList.contains('on')")
+    # テンキー（NumLock の状態によらず code で読む）・小数点・Backspace・Delete
+    ev(p, "document.querySelector('#q-dlines .jline').click()")
+    p.keyboard.press("Delete")
+    assert ev(p, val) == "0"
+    for k in ["Numpad3", "Numpad0", "Numpad0", "NumpadMultiply", "NumpadDecimal", "Numpad4", "Numpad5", "Backspace"]:
+        p.keyboard.press(k)
+    assert ev(p, val) == "0.4", ev(p, val)
+    p.keyboard.press("NumpadEnter"); p.keyboard.press("NumpadEnter")
+    assert ev(p, "entry.debit[0][1]") == 120, ev(p, "entry.debit")
+    # フォーカス中の電卓キーに Enter を送っても二重に押されない
+    ev(p, "document.querySelector('.addline[data-side=\"credit\"]').click(); document.querySelectorAll('#acct-chips .chip')[0].click()")
+    # openSheet は少し遅れてシート自体にフォーカスを移す。それが済んでからボタンにフォーカスする（先にやると奪い返される）
+    p.wait_for_function("document.activeElement === document.querySelector('#sheet-num')")
+    ev(p, "[...document.querySelectorAll('#sheet-num .npk')].find(k => k.textContent.trim() === '5').focus()")
+    p.keyboard.press("7"); p.keyboard.press("+"); p.keyboard.press("5"); p.keyboard.press("Enter")
+    assert ev(p, val) == "12", ev(p, val)
+    p.keyboard.press("Escape")
+    assert not ev(p, "document.querySelector('#sheet-num').classList.contains('on')")
+    # 電卓シート：Enter でメモへ／メモを書いている間は数字がメモに入り、電卓は動かない
+    ev(p, "document.querySelector('#fab-calc').click()")
+    p.wait_for_function("document.activeElement === document.querySelector('#sheet-calc')")
+    p.keyboard.press("2"); p.keyboard.press("/"); p.keyboard.press("8"); p.keyboard.press("Enter")
+    assert ev(p, "document.querySelector('#cp-val').textContent") == "0.25"
+    p.keyboard.press("Enter")
+    assert "0.25" in ev(p, "document.querySelector('#memo').value")
+    ev(p, "document.querySelector('#memo').focus()")
+    p.keyboard.type("99")
+    assert ev(p, "document.querySelector('#memo').value").endswith("99")
+    assert ev(p, "document.querySelector('#cp-val').textContent") == "0.25", "メモ入力を電卓が奪っている"
+    # シートが閉じていれば何もしない
+    ev(p, "closeSheet()")
+    p.keyboard.press("5")
+    assert ev(p, "document.querySelector('#cp-val').textContent") == "0.25"
+    assert not p._errors, p._errors
+
+@test("キーボードの案内はPC（マウスあり）にだけ出す・スマホでは出ない")
+def t_keyboard_hint(ctx):
+    p = fresh_page(ctx)
+    hint = "[...document.querySelectorAll('.kbdhint')].map(e => getComputedStyle(e).display)"
+    assert ev(p, hint) == ["none", "none"], ev(p, hint)
+    pc = ctx.browser.new_context(viewport={"width": 1280, "height": 800}, locale="ja-JP")
+    try:
+        q = fresh_page(pc)
+        assert ev(q, hint) == ["block", "block"], ev(q, hint)
+        assert not q._errors, q._errors
+    finally:
+        pc.close()
+
 @test("行の修正と削除（誤タップで消えない）")
 def t_edit(ctx):
     p = fresh_page(ctx)
