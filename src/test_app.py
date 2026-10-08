@@ -716,7 +716,7 @@ def t_fade_setting(ctx):
     ev(p, "store.set('drilllv', {D1:{box:99}, ZZ:{box:1}, D2:'x'}); drillLv = getDrillLv()")
     assert ev(p, "drillLv") == {"D1": {"box": 3, "runs": 0}}
     ev(p, "store.set('drillpos', {id:'D1', bi:2, keys:['final','nope','final'], miss:-1, stage:9})")
-    assert ev(p, "drillPos()") == {"id": "D1", "bi": 1, "keys": ["final"], "miss": 0, "stage": 1}
+    assert ev(p, "drillPos()") == {"id": "D1", "bi": 1, "keys": ["final"], "miss": 0, "helped": 0, "stage": 1}
     assert not p._errors, p._errors
 
 @test("誘導のフェード：設定の行が320px幅でもはみ出さない・4本すべて段階2で式が消え段階3で埋め切れる")
@@ -1113,6 +1113,116 @@ def t_order(ctx):
     # 論点別も順番が変わる
     order, _, _ = five("renderHome()", "startSession('topic', {cat:'商業', topic:'引当金'})")
     assert len(order) >= 3, "論点別の出題順が固定されている（%d通り）" % len(order)
+    assert not p._errors, p._errors
+
+@test("仕訳のヒント：2段（行数→科目・金額は出さない）。ヒントありの正解は箱据え置き・明日・一発正解に数えない。再開でも残る")
+def t_quiz_hint(ctx):
+    p = fresh_page(ctx)
+    ev(p, "document.querySelector('#btn-today').click()")
+    vis = "getComputedStyle(document.querySelector('#q-hint')).display !== 'none'"
+    assert not ev(p, vis), "押す前からヒントが見えている"
+    assert ev(p, "getComputedStyle(document.querySelector('#q-help')).display") != "none"
+    ev(p, "document.querySelector('#q-hint-btn').click()")
+    h1 = ev(p, "document.querySelector('#q-hint').textContent")
+    assert ev(p, vis) and "借方は" in h1 and "行" in h1, h1
+    assert ev(p, "curP().debit[0][0]") not in h1, "1段目で科目が出ている: " + h1
+    ev(p, "document.querySelector('#q-hint-btn').click()")
+    h2 = ev(p, "document.querySelector('#q-hint').textContent")
+    names = ev(p, "[...curP().debit, ...curP().credit].map(l => l[0])")
+    amts = ev(p, "[...curP().debit, ...curP().credit].map(l => l[1].toLocaleString('ja-JP'))")
+    assert all(n in h2 for n in names), h2
+    assert not any(a in h2 for a in amts if len(a) > 2), "ヒントに金額が出ている: " + h2
+    assert ev(p, "document.querySelector('#q-hint-btn').disabled"), "3段目のヒントが押せる"
+    # 途中で閉じても、出したヒントは残る
+    p.reload(); p.wait_for_function("typeof PROBLEMS !== 'undefined'"); p.evaluate(HELPERS)
+    ev(p, "resumeSession()")
+    assert ev(p, "qHint") == 2 and ev(p, vis)
+    id0 = ev(p, "curP().id")
+    ev(p, "__t.answerCorrect()")
+    assert ev(p, "document.querySelector('#q-fb-title').textContent") == "正解！（ヒントあり）"
+    pr = ev(p, f"progress['{id0}']")
+    assert pr["box"] == 0 and pr["due"] == ev(p, "addDays(todayStr(), 1)"), pr
+    assert ev(p, f"stState['{id0}']") == "okRetry" and ev(p, "combo") == 0
+    assert ev(p, f"queue.filter(x => x === '{id0}').length") == 1, "ヒントありの正解が再出題に回っている"
+    assert ev(p, "getComputedStyle(document.querySelector('#q-help')).display") == "none", "判定後もヒント欄が出ている"
+    # 次の問題ではヒントが消えている。ヒントなしで正解すれば箱が上がる
+    wait_cta(p); ev(p, "__t.cta()")
+    assert ev(p, "qHint") == 0 and not ev(p, vis)
+    assert ev(p, "document.querySelector('#q-hint-btn').textContent") == "💡 ヒント"
+    ev(p, "__t.answerCorrect()")
+    assert ev(p, "progress[curP().id].box") == 1
+    # 結果：一発正解はヒントなしの1問だけ
+    ev(p, "queue = queue.slice(0, 2); stations = stations.slice(0, 2)")
+    wait_cta(p); ev(p, "__t.cta()")
+    assert ev(p, "mode") == "result"
+    assert "1/2" in ev(p, "document.querySelector('#r-stats').textContent")
+    assert ev(p, "document.querySelector('#r-wrongsec').style.display") == "none", "ヒントありの正解が「間違えた問題」に入っている"
+    assert not p._errors, p._errors
+
+@test("仕訳の答えを見る：入力が途中でも押せる・不正解扱いで末尾に再出題・解説が開く")
+def t_quiz_giveup(ctx):
+    p = fresh_page(ctx)
+    ev(p, "document.querySelector('#btn-today').click()")
+    id0 = ev(p, "curP().id")
+    ev(p, "const q = curP(); __t.enter('debit', q.debit[0][0], 1)")   # 書きかけ（貸借不一致で判定ボタンは押せない）
+    assert ev(p, "document.querySelector('#cta').disabled")
+    ev(p, "document.querySelector('#q-giveup').click()")
+    assert ev(p, "answered")
+    assert ev(p, "document.querySelector('#q-fb-title').textContent") == "答えを確認しましょう"
+    assert ev(p, "document.querySelector('#q-fb-more').open"), "答えを見たのに正解が畳まれている"
+    assert ev(p, "document.querySelector('#q-fb-ans').textContent.includes(curP().debit[0][0])")
+    assert ev(p, "queue.length") == 11 and ev(p, "queue[10]") == id0
+    pr = ev(p, f"progress['{id0}']")
+    assert pr["wrong"] == 1 and pr["box"] == 0 and pr["due"] == ev(p, "addDays(todayStr(), 1)"), pr
+    assert ev(p, "sessionLog[0].ok") is False
+    # 判定済みの問題では、もう押しても何も起きない
+    ev(p, "document.querySelector('#q-giveup').click(); document.querySelector('#q-hint-btn').click()")
+    assert ev(p, "queue.length") == 11 and ev(p, "qHint") == 0
+    wait_cta(p)
+    assert ev(p, "document.querySelector('#cta').textContent") == "次の問題へ"
+    assert not p._errors, p._errors
+
+@test("ドリルのヒント・答えを見る：ミスしなくても開ける・答えを見ると欄が埋まって進む・使った回は段階が薄くならない")
+def t_drill_help(ctx):
+    p = fresh_page(ctx)
+    ev(p, "startDrill('D1')")
+    assert ev(p, "getComputedStyle(document.querySelector('#b-help')).display") != "none"
+    assert ev(p, "!document.querySelector('#b-hint').classList.contains('on')")
+    ev(p, "document.querySelector('#b-hint-btn').click()")
+    assert ev(p, "document.querySelector('#b-hint').classList.contains('on')") and "400個" in ev(p, "document.querySelector('#b-hint').textContent")
+    assert ev(p, "document.querySelector('#b-hint-btn').disabled") and ev(p, "bHelped") == 1
+    ev(p, "document.querySelector('#b-hint-btn').click()")   # 同じ欄で2回押しても数えない
+    assert ev(p, "bHelped") == 1
+    ev(p, "__t.cta(); __t.keys('200'); __t.press('OK')")
+    assert ev(p, "bi") == 1 and ev(p, "!document.querySelector('#b-hint').classList.contains('on')"), "次の欄までヒントが開いたまま"
+    # 画面の「答えを見る」：その欄に正解が入って次へ。ミス1回
+    ev(p, "document.querySelector('#b-giveup').click()")
+    assert ev(p, "bi") == 2 and ev(p, "bMiss") == 1 and ev(p, "bHelped") == 2
+    assert "168,000" in ev(p, "document.querySelector('#b-boxes .blank[data-blank=\"matEnd\"]').textContent")
+    assert ev(p, "store.get('drillpos').helped") == 2
+    # ミスのシートから「答えを見て進む」：ミスは二重に数えない
+    ev(p, "__t.cta(); __t.keys('1'); __t.press('OK')")
+    assert ev(p, "document.querySelector('#sheet-miss').classList.contains('on')") and ev(p, "bMiss") == 2
+    ev(p, "document.querySelector('#miss-giveup').click()")
+    assert ev(p, "bi") == 3 and ev(p, "bMiss") == 2 and not ev(p, "document.querySelector('#sheet-miss').classList.contains('on')")
+    for v in ["120000", "960000", "288000", "1632000"]:
+        ev(p, f"__t.cta(); __t.keys('{v}'); __t.press('OK')")
+    assert ev(p, "bDone") and ev(p, "getComputedStyle(document.querySelector('#b-help')).display") == "none"
+    assert "ヒント／答え 3 回" in ev(p, "document.querySelector('#b-fb-body .stg').textContent")
+    # ミス0でもヒントを見た回は箱が上がらない。ヒントなしなら上がる
+    ev(p, "goHome()"); p.wait_for_function("mode === 'home'")
+    ev(p, "drillLv = {}; startDrill('D2'); document.querySelector('#b-hint-btn').click()")
+    ev(p, "for(const st of drill.steps){ __t.cta(); __t.keys(String(st.a)); __t.press('OK'); }")
+    assert ev(p, "bDone") and ev(p, "bMiss") == 0 and ev(p, "drillLv.D2.box") == 0
+    ev(p, "goHome()"); p.wait_for_function("mode === 'home'")
+    ev(p, "__t.drillRun('D2')")
+    assert ev(p, "drillLv.D2.box") == 1
+    # 段階3：ヒントを押すと、その欄だけ誘導（STEPの問い）が出る
+    ev(p, "goHome()"); p.wait_for_function("mode === 'home'")
+    ev(p, "settings.guide = '3'; startDrill('D4')")
+    assert not ev(p, "__t.stepShown()")
+    ev(p, "document.querySelector('#b-hint-btn').click()")
+    assert ev(p, "__t.stepShown()") and ev(p, "document.querySelector('#b-hint').classList.contains('on')")
     assert not p._errors, p._errors
 
 # ---------------- 実行 ----------------

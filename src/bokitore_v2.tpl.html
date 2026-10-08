@@ -301,6 +301,11 @@
   .stepcard p{margin:4px 0 0; font-size:14px}
   .hint{margin-top:8px; font-size:12.5px; color:var(--ink-soft); background:var(--surface2); border-radius:10px; padding:8px 12px; display:none}
   .hint.on{display:block}
+  /* ヒント・答えを見る（仕訳とドリル）：解いている最中だけ出す。判定・完答のあとは隠す */
+  .helpbtns{display:flex; gap:10px; margin-top:12px} .helpbtns .btn2{margin:0; flex:1; height:40px; font-size:13px; color:var(--ink-soft)}
+  .helpbtns .btn2:disabled{opacity:.45}
+  #q-hint{white-space:pre-line; margin-top:12px}
+  .btn2.ghost{background:transparent; border-color:transparent; color:var(--ink-soft); font-weight:500; height:40px; font-size:13px}
   .shake{animation:shk .3s}
   @keyframes shk{0%,100%{transform:translateX(0)}25%{transform:translateX(-5px)}75%{transform:translateX(5px)}}
   @media (prefers-reduced-motion: reduce){ .shake{animation:none} }
@@ -561,6 +566,10 @@
       <div class="side c"><h3>貸方</h3><div class="lines" id="q-clines"></div><button class="addline" data-side="credit">＋ 科目を選ぶ</button></div>
       <div class="baltag" id="q-bal">借方 0 ／ 貸方 0</div>
     </div>
+    <div id="q-help">
+      <div class="hint" id="q-hint"></div>
+      <div class="helpbtns"><button class="btn2" id="q-hint-btn">💡 ヒント</button><button class="btn2" id="q-giveup">📖 答えを見る</button></div>
+    </div>
     <div class="fb" id="q-fb">
       <h3 id="q-fb-title"></h3>
       <div class="reward" id="q-reward"></div>
@@ -619,6 +628,7 @@
     <div class="qcard"><div class="meta" id="b-cat"></div><p class="qt" style="font-size:14px" id="b-text"></p></div>
     <div id="b-boxes"></div>
     <div class="stepcard" id="b-step"><div class="sn" id="b-step-n"></div><p id="b-step-q"></p><div class="hint" id="b-hint"></div></div>
+    <div class="helpbtns" id="b-help"><button class="btn2" id="b-hint-btn">💡 ヒント</button><button class="btn2" id="b-giveup">📖 答えを見る</button></div>
     <div class="fb" id="b-fb"><h3 id="b-fb-title"></h3><div id="b-fb-body"></div></div>
   </section>
 
@@ -664,6 +674,7 @@
     <p class="how" id="miss-body"></p>
     <div class="hint on" id="miss-hint" hidden></div>
     <div class="missbtns"><button class="btn2" id="miss-hint-btn">ヒントを見る</button><button class="btn2 accent" id="miss-retry">もう一度入力</button></div>
+    <button class="btn2 ghost" id="miss-giveup">📖 答えを見て進む</button>
   </div>
 </div>
 
@@ -770,11 +781,12 @@ let days = getDays();
 function getDrillDone(){ const d = store.get("drills", null); return isObj(d) ? d : {}; }
 let drillDone = getDrillDone();
 
-function recordAnswer(id, correct){
+function recordAnswer(id, correct, hinted){
   const t = todayStr();
   const r = progress[id] || {box:0, due:t, seen:0, wrong:0};
   r.seen++;
-  if(correct){ r.box = Math.min(r.box + 1, 5); r.due = addDays(t, INTERVALS[r.box]); }
+  if(correct && hinted){ r.due = addDays(t, 1); }   // ヒントを見て正解：箱は据え置き、明日もう一度（自力で解けたら箱が上がる）
+  else if(correct){ r.box = Math.min(r.box + 1, 5); r.due = addDays(t, INTERVALS[r.box]); }
   else { r.wrong++; r.box = 0; r.due = addDays(t, 1); }  // 不正解は翌日の復習へ（同日の再挑戦はセッション内キューで行う）
   progress[id] = r; store.set("progress", progress);
   days[t] = nn(days[t]) + 1; store.set("days", days);
@@ -1293,11 +1305,13 @@ $("#btn-reset").addEventListener("click", () => {
 /* ================= session (仕訳) ================= */
 let queue = [], qi = 0, entry = {debit:[], credit:[]}, answered = false, retried = new Set(), retries = {};
 let sessionLog = [];
+let qHint = 0;           // いまの問題で出したヒントの段数（0＝なし、1＝行数、2＝科目まで）
+const HINT_MAX = 2;
 // 路線：分母は「最初に計画した駅（問題）」で固定する。再挑戦はキューに足すが駅は増やさない
 let stations = [], stState = {}, combo = 0, comboMax = 0, boxUps = 0, topicGain = {};
 const MAX_RETRY = 2; // 同一セッション内で最大2回まで末尾に再出題（その後は翌日の復習へ）
 const STN_STATES = ["todo","ok","miss","okRetry","fail"];
-function saveSession(){ store.set("session", {v:DATA_VER, queue, qi, answered, entry, log:sessionLog, retries, retried:[...retried], stations, st:stState, combo, comboMax, boxUps, gain:topicGain}); }
+function saveSession(){ store.set("session", {v:DATA_VER, queue, qi, answered, entry, hint:qHint, log:sessionLog, retries, retried:[...retried], stations, st:stState, combo, comboMax, boxUps, gain:topicGain}); }
 function clearSession(){ store.del("session"); }
 function savedSession(){
   const s = store.get("session", null);
@@ -1313,7 +1327,7 @@ function savedSession(){
   if(!stn.length) stn = [...new Set(q)];   // 旧形式の保存データはキューから駅を起こす
   const st = {}; if(isObj(s.st)) for(const k in s.st){ if(known(k) && STN_STATES.includes(s.st[k])) st[k] = s.st[k]; }
   const gain = {}; if(isObj(s.gain)) for(const k in s.gain){ const g = s.gain[k]; if(Array.isArray(g) && g.length === 2) gain[k] = [nn(g[0]), nn(g[1])]; }
-  return {queue:q, qi:qi2, entry:e, log:s.log.filter(x => isObj(x) && typeof x.id === "string"), retries:isObj(s.retries) ? s.retries : {}, retried:Array.isArray(s.retried) ? s.retried : [],
+  return {queue:q, qi:qi2, entry:e, hint:s.answered ? 0 : Math.min(nn(s.hint), HINT_MAX), log:s.log.filter(x => isObj(x) && typeof x.id === "string"), retries:isObj(s.retries) ? s.retries : {}, retried:Array.isArray(s.retried) ? s.retried : [],
           stations:stn, st, combo:nn(s.combo), comboMax:nn(s.comboMax), boxUps:nn(s.boxUps), gain};
 }
 function resumeSession(){
@@ -1321,7 +1335,7 @@ function resumeSession(){
   queue = s.queue; qi = s.qi; sessionLog = s.log; retries = s.retries; retried = new Set(s.retried);
   stations = s.stations; stState = s.st; combo = s.combo; comboMax = s.comboMax; boxUps = s.boxUps; topicGain = s.gain;
   show("quiz"); renderQ();
-  entry = s.entry; renderLines(); updateCta();   // 入力途中の仕訳も復元
+  entry = s.entry; qHint = s.hint; renderLines(); renderHelp(); updateCta();   // 入力途中の仕訳・出したヒントも復元
 }
 // 遅れている問題を先に出す。同じ期日の中は並べ替えない＝直前の shuffle 順のまま。
 // （ここで箱を第2基準にすると、期日が同じ日に固まったとき順番まで固定されてしまう。
@@ -1398,7 +1412,7 @@ function advanceRoute(id){
 const curP = () => PROBLEMS.find(p => p.id === queue[qi]);
 function renderQ(){
   const p = curP();
-  answered = false; entry = {debit:[], credit:[]};
+  answered = false; entry = {debit:[], credit:[]}; qHint = 0;
   $("#q-cat").textContent = p.cat + "簿記 · " + p.topic;
   $("#q-title").textContent = "仕訳 · " + p.topic;
   $("#q-lv").textContent = "●".repeat(p.level || 1) + "○".repeat(3 - (p.level || 1));
@@ -1407,8 +1421,30 @@ function renderQ(){
   $("#q-text").textContent = p.text;
   renderRoute();
   $("#q-fb").className = "fb";
-  renderLines(); updateCta();
+  renderLines(); renderHelp(); updateCta();
 }
+// ヒントは2段：①借方・貸方の行数 ②使う科目（金額は出さない）。それでも分からなければ「答えを見る」
+function hintText(p, lv){
+  const d = p.debit.map(l => l[0]), c = p.credit.map(l => l[0]);
+  const t = ["💡 借方は" + d.length + "行、貸方は" + c.length + "行です。"];
+  if(lv >= 2) t.push("💡 借方：" + d.join("・") + "　／　貸方：" + c.join("・"));
+  if(p.alts && p.alts.length) t.push("（別の書き方でも正解になります）");
+  return t.join("\n");
+}
+function renderHelp(){
+  const p = curP();
+  $("#q-help").hidden = answered;
+  $("#q-hint").className = "hint" + (qHint ? " on" : "");
+  $("#q-hint").textContent = qHint ? hintText(p, qHint) : "";
+  const b = $("#q-hint-btn");
+  b.textContent = qHint === 0 ? "💡 ヒント" : (qHint < HINT_MAX ? "💡 もう1つヒント" : "💡 ヒントは以上");
+  b.disabled = qHint >= HINT_MAX;
+}
+$("#q-hint-btn").addEventListener("click", () => {
+  if(answered || qHint >= HINT_MAX) return;
+  qHint++; renderHelp(); saveSession();
+});
+$("#q-giveup").addEventListener("click", () => { if(!answered) checkQ(true); });
 function renderLines(){
   for(const side of ["debit","credit"]){
     const wrap = side === "debit" ? $("#q-dlines") : $("#q-clines"); wrap.innerHTML = "";
@@ -1443,18 +1479,22 @@ function sideEq(a, b){
   for(const ln of a){ const i = rest.indexOf(ln[0] + "|" + ln[1]); if(i < 0) return false; rest.splice(i,1); }
   return true;
 }
-function checkQ(){
+// giveup＝「答えを見る」：不正解と同じ扱い（あとでもう一度・明日の復習へ）で、正解と解説を開く
+function checkQ(giveup){
   const p = curP();
   const answers = [p].concat(p.alts || []);   // 別解（例：二段階仕訳）も正解にする
-  const ok = answers.some(a => sideEq(entry.debit, a.debit) && sideEq(entry.credit, a.credit));
+  const ok = !giveup && answers.some(a => sideEq(entry.debit, a.debit) && sideEq(entry.credit, a.credit));
+  const hinted = ok && qHint > 0;   // ヒントありの正解：駅はクリア、ただし箱は上げない・一発正解に数えない
   answered = true;
   const first = !retried.has(p.id);
-  if(first) sessionLog.push({id:p.id, ok});
+  if(first) sessionLog.push(hinted ? {id:p.id, ok, h:true} : {id:p.id, ok});
   const boxBefore = progress[p.id] ? progress[p.id].box : 0, pctBefore = topicPct(p);
-  recordAnswer(p.id, ok);
+  recordAnswer(p.id, ok, hinted);
   const r = progress[p.id], pctAfter = topicPct(p);
   // 駅の状態・コンボ・積み上げ
-  if(ok){
+  if(ok && hinted){
+    stState[p.id] = "okRetry";   // コンボは伸ばさないが切りもしない
+  } else if(ok){
     stState[p.id] = first ? "ok" : "okRetry";
     combo++; comboMax = Math.max(comboMax, combo);
     if(r.box > boxBefore) boxUps++;
@@ -1468,10 +1508,13 @@ function checkQ(){
 
   const fb = $("#q-fb");
   fb.className = "fb on " + (ok ? "good" : "bad");
-  $("#q-fb-title").textContent = ok ? (first ? "正解！" : "正解！停車駅を出発") : "不正解…";
+  $("#q-fb-title").textContent = giveup ? "答えを確認しましょう" : (hinted ? "正解！（ヒントあり）" : (ok ? (first ? "正解！" : "正解！停車駅を出発") : "不正解…"));
   // 答えた瞬間に動くもの：駅・コンボ・箱・論点
   const rw = [];
-  if(ok){
+  if(hinted){
+    rw.push('<span class="rw go">🚃 ' + (stations.indexOf(p.id) + 1) + '駅目をヒントありでクリア</span>');
+    rw.push('<span class="rw box">' + boxDots(r.box) + '<small>箱は据え置き・明日もう一度。ヒントなしで解けたら上がります</small></span>');
+  } else if(ok){
     const stnNo = stations.indexOf(p.id) + 1;   // 路線上の位置（電車が止まっている駅と一致させる）
     rw.push('<span class="rw go">🚃 ' + (first ? stnNo + "駅目に到着" : stnNo + "駅目の停車をクリア") + '</span>');
     if(combo >= 2) rw.push('<span class="rw combo">🔥 ' + comboLabel(combo) + '</span>');
@@ -1492,7 +1535,8 @@ function checkQ(){
   }
   $("#q-fb-ans").innerHTML = '<div class="ans">' + html.join("") + '</div>';
   $("#q-fb-expl").textContent = p.expl;
-  $("#q-fb-more").open = !ok;
+  $("#q-fb-more").open = !ok || hinted;
+  renderHelp();
   $("#q-fb-next").textContent = ok ? "" : (retries[p.id] <= MAX_RETRY ? "このセッションの最後にもう一度出ます。明日の復習にも入ります。" : "きょうはここまで。明日の復習に入ります。");
   advanceRoute(p.id);
   saveSession();
@@ -1524,7 +1568,7 @@ function confetti(){
 }
 const statHtml = pairs => pairs.map(([k, v]) => '<div class="stat"><div class="v num">' + v + '</div><div class="k">' + k + '</div></div>').join("");
 function renderResult(){
-  const n = sessionLog.length, ok = sessionLog.filter(x => x.ok).length;
+  const n = sessionLog.length, ok = sessionLog.filter(x => x.ok && !x.h).length;   // 一発正解＝ヒントなしで正解
   const N = stations.length, cleared = stationsCleared();
   const perfect = N > 0 && ok === n && cleared === N;
   $("#r-title").textContent = perfect ? "ノンストップ運転" : (cleared === N ? "全駅停車で完走" : cleared + "駅に到着");
@@ -1578,14 +1622,15 @@ let drillLv = getDrillLv();
 function drillBox(id){ return drillLv[id] ? drillLv[id].box : 0; }
 function stageOfBox(box){ return box <= 0 ? 1 : (box === 1 ? 2 : 3); }
 function drillStage(id){ return settings.guide === "auto" ? stageOfBox(drillBox(id)) : Number(settings.guide); }
-function bumpDrillBox(id, miss){
-  const box = drillBox(id);
-  const nb = miss === 0 ? Math.min(box + 1, DRILL_BOX_MAX) : (miss >= 3 ? Math.max(box - 1, 0) : box);
+function bumpDrillBox(id, miss, helped){
+  const box = drillBox(id);   // ヒント・答えを見た回は、ミス0でも薄くしない
+  const nb = (miss === 0 && !helped) ? Math.min(box + 1, DRILL_BOX_MAX) : (miss >= 3 ? Math.max(box - 1, 0) : box);
   drillLv[id] = {box:nb, runs:nn(drillLv[id] && drillLv[id].runs) + 1}; store.set("drilllv", drillLv);
   return nb;
 }
 
 let drill = null, bi = 0, bDone = false, bStage = 1, bCur = 0, bFilled = [], bMiss = 0, bRescue = "";
+let bHelped = 0, bHintKey = "";   // ヒント・答えを見た回数／いまヒントを開いている欄
 function drillPos(){
   const d = store.get("drillpos", null);
   if(!isObj(d) || !DRILLS.some(x => x.id === d.id)) return null;
@@ -1594,9 +1639,9 @@ function drillPos(){
   const keys = Array.isArray(d.keys) ? d.keys.filter((k, i, a) => valid.includes(k) && a.indexOf(k) === i) : valid.slice(0, nn(d.bi));   // 旧形式（bi だけ）も読める
   const b = keys.length;
   if(!(b > 0 && b < dr.steps.length)) return null;
-  return {id:d.id, bi:b, keys, miss:nn(d.miss), stage:[1,2,3].includes(d.stage) ? d.stage : 1};
+  return {id:d.id, bi:b, keys, miss:nn(d.miss), helped:nn(d.helped), stage:[1,2,3].includes(d.stage) ? d.stage : 1};
 }
-function saveDrillPos(){ store.set("drillpos", {id:drill.id, bi, keys:bFilled.slice(), miss:bMiss, stage:bStage}); }
+function saveDrillPos(){ store.set("drillpos", {id:drill.id, bi, keys:bFilled.slice(), miss:bMiss, helped:bHelped, stage:bStage}); }
 function nextStepIdx(){ return drill.steps.findIndex(x => !bFilled.includes(x.key)); }
 function stepOf(key){ return drill.steps.findIndex(x => x.key === key); }
 function blankEl(key){ return document.querySelector('#b-boxes .blank[data-blank="' + key + '"]'); }
@@ -1610,7 +1655,7 @@ function blankLabel(s, short){
   return (bt && !short ? bt + " › " : "") + lbl + u;
 }
 function startDrill(id){
-  drill = DRILLS.find(d => d.id === id); bi = 0; bDone = false; bFilled = []; bMiss = 0; bRescue = ""; bCur = 0;
+  drill = DRILLS.find(d => d.id === id); bi = 0; bDone = false; bFilled = []; bMiss = 0; bRescue = ""; bCur = 0; bHelped = 0; bHintKey = "";
   const dp = drillPos();
   bStage = (dp && dp.id === id) ? dp.stage : drillStage(id);   // 途中再開は始めたときの段階のまま（設定を変えても走っている回は変わらない）
   $("#b-cat").textContent = drill.tag + " · " + drill.title + " · 段階" + bStage + " " + STAGE_LABEL[bStage];
@@ -1620,7 +1665,7 @@ function startDrill(id){
   $("#b-boxes").classList.toggle("fade", bStage >= 2);
   $("#b-fb").className = "fb"; $("#b-hint").className = "hint"; $("#b-step").style.display = ""; $("#b-step").hidden = false;
   if(dp && dp.id === id){   // 途中から再開：埋めた欄を復元
-    bFilled = dp.keys.slice(); bi = bFilled.length; bMiss = dp.miss;
+    bFilled = dp.keys.slice(); bi = bFilled.length; bMiss = dp.miss; bHelped = dp.helped;
     for(const k of bFilled){ const st = drill.steps[stepOf(k)], target = blankEl(k); if(target){ target.textContent = fmtAns(st); target.className = "blank done num"; } }
   }
   saveDrillPos();
@@ -1632,7 +1677,8 @@ function renderB(){
   const s = drill.steps[bCur];
   $("#b-prog").style.width = (bi / drill.steps.length * 100) + "%";
   $("#b-count").textContent = (bi+1) + "/" + drill.steps.length;
-  $("#b-hint").className = "hint"; $("#b-hint").textContent = "💡 " + s.hint;
+  $("#b-hint").className = "hint" + (bHintKey === s.key ? " on" : ""); $("#b-hint").textContent = "💡 " + s.hint;
+  $("#b-help").hidden = false; $("#b-hint-btn").disabled = bHintKey === s.key;
   const rescue = bStage === 3 && bRescue === s.key;
   document.querySelectorAll("#b-boxes .blank").forEach(b => {
     b.classList.remove("active");
@@ -1647,11 +1693,11 @@ function renderB(){
 function fmtAns(s){ if(s.type === "choice") return s.a; if(s.unit === "円") return yen(s.a); if(s.unit === "%") return s.a + "%"; return s.a.toLocaleString("ja-JP"); }
 function stageNote(nb){
   const next = drillStage(drill.id);
-  let t = "誘導「" + STAGE_LABEL[bStage] + "」でミス " + bMiss + " 回。";
+  let t = "誘導「" + STAGE_LABEL[bStage] + "」でミス " + bMiss + " 回" + (bHelped ? "・ヒント／答え " + bHelped + " 回" : "") + "。";
   if(settings.guide !== "auto") t += "設定で「" + STAGE_LABEL[next] + "」に固定中（自動にすると箱 " + nb + " → 「" + STAGE_LABEL[stageOfBox(nb)] + "」）";
   else if(next > bStage) t += "次はひとつ薄い「" + STAGE_LABEL[next] + "」で。";
   else if(next < bStage) t += "次はひとつ戻して「" + STAGE_LABEL[next] + "」で。";
-  else t += "次も「" + STAGE_LABEL[next] + "」で（ミス0で完答すると薄くなります）。";
+  else t += "次も「" + STAGE_LABEL[next] + "」で（ヒントなし・ミス0で完答すると薄くなります）。";
   return '<p class="expl stg">' + esc(t) + '</p>';
 }
 function stepResult(s, v){
@@ -1666,10 +1712,10 @@ function stepResult(s, v){
       bDone = true; $("#b-prog").style.width = "100%"; store.del("drillpos");
       drillDone[drill.id] = nn(drillDone[drill.id]) + 1; store.set("drills", drillDone);
       const t = todayStr(); days[t] = nn(days[t]) + 1; store.set("days", days);
-      const nb = bumpDrillBox(drill.id, bMiss);
+      const nb = bumpDrillBox(drill.id, bMiss, bHelped);
       const fb = $("#b-fb"); fb.className = "fb on good";
       $("#b-fb-title").textContent = "完答！"; $("#b-fb-body").innerHTML = drill.final + stageNote(nb);
-      $("#b-step").style.display = "none"; updateCta();
+      $("#b-step").style.display = "none"; $("#b-help").hidden = true; updateCta();
     } else { bCur = nextStepIdx(); renderB(); }
   } else {
     bMiss++; saveDrillPos();
@@ -1683,12 +1729,31 @@ function stepResult(s, v){
     openSheet($("#sheet-miss"));
   }
 }
+// ヒントを開く（ミスのシートからでも、画面の「ヒント」ボタンからでも同じ）。段階3はこの欄だけ誘導（STEPの問い）も出す
+function showDrillHint(){
+  const s = drill.steps[bCur];
+  if(bHintKey !== s.key){ bHintKey = s.key; bHelped++; saveDrillPos(); }
+  if(bStage === 3) bRescue = s.key;
+  renderB();
+}
 $("#miss-hint-btn").addEventListener("click", () => {
-  if(bStage === 3){ bRescue = drill.steps[bCur].key; renderB(); }   // 段階3：この欄だけ誘導（STEPの問い）を出す
-  $("#miss-hint").hidden = false; $("#miss-hint-btn").hidden = true; $("#b-hint").className = "hint on";
+  showDrillHint();
+  $("#miss-hint").hidden = false; $("#miss-hint-btn").hidden = true;
   $("#miss-body").textContent = $("#miss-body").dataset.entered + " ヒントを手がかりに、もう一度入力しましょう。";
 });
 $("#miss-retry").addEventListener("click", () => { closeSheet(); answerB(); });
+$("#b-hint-btn").addEventListener("click", () => { if(!bDone && bCur >= 0) showDrillHint(); });
+// 答えを見る：いまの欄に正解を入れて次へ進む。ミス1回として数える（ミスのシートから来たときは、そのミスで数え済み）
+function revealB(fromMiss){
+  if(bDone || bCur < 0) return;
+  const s = drill.steps[bCur];
+  if(!fromMiss) bMiss++;
+  bHelped++;
+  toast(blankLabel(s, true) + " の答え：" + fmtAns(s));
+  stepResult(s, s.a);
+}
+$("#b-giveup").addEventListener("click", () => revealB(false));
+$("#miss-giveup").addEventListener("click", () => { closeSheet(); revealB(true); });
 function answerB(){
   if(bCur < 0 || bFilled.includes(drill.steps[bCur].key)) bCur = nextStepIdx();
   const s = drill.steps[bCur];
