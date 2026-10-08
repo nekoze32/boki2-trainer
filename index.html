@@ -172,6 +172,9 @@
   .stat .v{font-size:20px; font-weight:600} .stat .k{font-size:11px; color:var(--ink-soft)}
   .setrow.link{width:100%; text-align:left; min-height:48px; color:var(--accent); font-weight:500}
   .setrow.link.danger{color:var(--ng-ink)}
+  .move{margin:0 0 14px; padding:12px 14px; border:1px solid var(--accent); border-radius:12px; background:var(--surface2); font-size:13px}
+  .move b{display:block; font-size:15px; margin-bottom:4px}
+  .move .go{margin-top:10px}
   .drill .cont{font-size:11px; color:var(--warn); flex:none; font-weight:700}
   .how{font-size:14px; margin:6px 0} ol.how{padding-left:20px} ol.how li{margin:4px 0}
   .how.small{font-size:12px; color:var(--ink-soft)}
@@ -489,6 +492,11 @@
     </div>
 
     <div class="tabpane on" id="pane-today">
+      <div class="move" id="move-banner" hidden>
+        <b>ボキトレインは引っ越しました</b>
+        新しい場所でも、ここまでの学習記録をそのまま使えます。下のボタンで記録ごと移ってください。
+        <button class="go" id="btn-move">記録ごと新しい場所へ移る</button>
+      </div>
       <div class="today">
         <div class="t">まずはここから</div>
         <button class="go" id="btn-today">きょうの学習を始める</button>
@@ -551,6 +559,9 @@
         <div class="setrow"><span>ドリルの誘導</span><div class="seg" data-set="guide"><button data-v="auto">自動</button><button data-v="1">あり</button><button data-v="2">見出し</button><button data-v="3">空欄</button></div></div>
         <div class="setrow"><span>試験日（本番）</span><input type="date" id="set-examdate" aria-label="試験日"></div>
         <button class="setrow link" id="btn-a2hs">ホーム画面に追加する方法</button>
+        <button class="setrow link" id="btn-export">学習記録をファイルに書き出す</button>
+        <button class="setrow link" id="btn-import">学習記録をファイルから読み込む</button>
+        <input type="file" id="import-file" accept="application/json,.json" hidden>
         <button class="setrow link danger" id="btn-reset">学習データをリセット</button>
       </div>
       <div class="sec">
@@ -1321,6 +1332,94 @@ $("#btn-reset").addEventListener("click", () => {
     toast("学習データをリセットしました"); renderHome();
   });
 });
+
+/* ================= 学習記録の書き出し・読み込み・引っ越し ================= */
+// 新しい公開先。空のあいだは旧サイトに引っ越しの案内を出さない
+const MOVE_TO = "";
+const MOVE_FROM = "https://nekoze32.github.io";
+const REC = "bokitore:";
+function dumpRecords(){
+  const data = {};
+  try{
+    for(let i = 0; i < localStorage.length; i++){
+      const k = localStorage.key(i);
+      if(k && k.indexOf(REC) === 0) data[k.slice(REC.length)] = localStorage.getItem(k);
+    }
+  }catch(e){}
+  return {format:"bokitore-records", version:1, exportedAt:new Date().toISOString(), data};
+}
+// 学習の記録があるか（設定・画面の開閉状態だけなら無いとみなす）
+function hasRecords(){ const d = dumpRecords().data; return ["progress","days","drills","drilllv","examlog","memo","session","exam"].some(k => k in d); }
+// 置き換え。入れる前に全部確かめるので、壊れたデータなら今の記録には触らない
+function loadRecords(obj){
+  if(!isObj(obj) || obj.format !== "bokitore-records" || !isObj(obj.data)) throw new Error("この形式のファイルは読めません");
+  const keys = Object.keys(obj.data);
+  keys.forEach(k => { if(typeof obj.data[k] !== "string") throw new Error("ファイルの中身が壊れています"); JSON.parse(obj.data[k]); });
+  Object.keys(dumpRecords().data).forEach(k => localStorage.removeItem(REC + k));
+  keys.forEach(k => localStorage.setItem(REC + k, obj.data[k]));
+}
+// URLの # に載せるための base64url（UTF-8）
+function packRecords(obj){
+  const bytes = new TextEncoder().encode(JSON.stringify(obj));
+  let s = ""; for(let i = 0; i < bytes.length; i += 0x8000) s += String.fromCharCode.apply(null, bytes.subarray(i, i + 0x8000));
+  return btoa(s).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+}
+function unpackRecords(str){
+  const s = atob(str.replace(/-/g, "+").replace(/_/g, "/"));
+  const bytes = new Uint8Array(s.length); for(let i = 0; i < s.length; i++) bytes[i] = s.charCodeAt(i);
+  return JSON.parse(new TextDecoder().decode(bytes));
+}
+let reloading = false;
+function afterLoad(msg){
+  try{ sessionStorage.setItem("bokitore-moved", msg); }catch(e){}
+  reloading = true; location.reload();
+}
+
+// 書き出し：共有シートが使えるなら「ファイルに保存」へ。ホーム画面アプリは download が効かないことがある
+$("#btn-export").addEventListener("click", async () => {
+  const file = new File([JSON.stringify(dumpRecords())], "bokitrain-" + todayStr() + ".json", {type:"application/json"});
+  if(navigator.canShare && navigator.canShare({files:[file]})){
+    try{ await navigator.share({files:[file]}); toast("書き出しました"); return; }
+    catch(e){ if(e.name === "AbortError") return; }
+  }
+  const a = document.createElement("a"); a.href = URL.createObjectURL(file); a.download = file.name;
+  document.body.appendChild(a); a.click(); a.remove();
+  toast("書き出しました");
+});
+$("#btn-import").addEventListener("click", () => $("#import-file").click());
+$("#import-file").addEventListener("change", async e => {
+  const f = e.target.files && e.target.files[0]; e.target.value = "";
+  if(!f) return;
+  let obj;
+  try{ obj = JSON.parse(await f.text()); }catch(err){ toast("この形式のファイルは読めません"); return; }
+  pickChip("この端末の学習記録を、ファイルの記録で置き換えます。", ["置き換える","やめる"], v => {
+    if(v !== "置き換える") return;
+    try{ loadRecords(obj); afterLoad("学習記録を読み込みました"); }catch(err){ toast(err.message); }
+  });
+});
+
+// 引っ越し（送る側）：旧サイトで、記録を # に載せて新しい場所を開く。# はサーバーに送られない
+if(MOVE_TO && location.origin === MOVE_FROM){
+  $("#move-banner").hidden = false;
+  $("#btn-move").addEventListener("click", () => { location.href = MOVE_TO + "#move=" + packRecords(dumpRecords()); });
+}
+// 引っ越し（受け取る側）：# から記録を取り出し、履歴からは消す
+(function receiveMove(){
+  const m = location.hash.match(/^#move=(.+)$/);
+  if(!m) return;
+  try{ history.replaceState(null, "", location.pathname + location.search); }catch(e){}
+  let obj;
+  try{ obj = unpackRecords(m[1]); }catch(e){ toast("記録を受け取れませんでした。前の場所で「ファイルに書き出す」を使ってください"); return; }
+  const take = () => { try{ loadRecords(obj); afterLoad("前の場所から学習記録を引き継ぎました"); }catch(e){ toast(e.message); } };
+  if(!hasRecords()) take();
+  else setTimeout(() => pickChip("前の場所から学習記録が届きました。この端末の記録と置き換えますか。", ["置き換える","やめる"], v => { if(v === "置き換える") take(); }), 0);
+})();
+(function movedToast(){
+  if(reloading) return;   // 開き直す前のページで読むと、印を消してしまう
+  let msg = null;
+  try{ msg = sessionStorage.getItem("bokitore-moved"); sessionStorage.removeItem("bokitore-moved"); }catch(e){}
+  if(msg) setTimeout(() => toast(msg), 300);
+})();
 
 /* ================= session (仕訳) ================= */
 let queue = [], qi = 0, entry = {debit:[], credit:[]}, answered = false, retried = new Set(), retries = {};

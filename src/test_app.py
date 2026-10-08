@@ -1225,6 +1225,90 @@ def t_drill_help(ctx):
     assert ev(p, "__t.stepShown()") and ev(p, "document.querySelector('#b-hint').classList.contains('on')")
     assert not p._errors, p._errors
 
+def same_records(got, want):
+    """起動時に書かれる画面の状態（memoOpen）は比べない"""
+    got = {k: v for k, v in got.items() if k != "memoOpen"}; want = {k: v for k, v in want.items() if k != "memoOpen"}
+    assert got == want, {k: (got.get(k), want.get(k)) for k in set(got) | set(want) if got.get(k) != want.get(k)}
+
+def make_records(p):
+    """1回分解いて記録を作り、書き出し形式で返す"""
+    ev(p, "startSession('today')"); p.wait_for_function("mode === 'quiz'")
+    ev(p, "__t.answerCorrect()")
+    ev(p, "document.querySelector('#memo').value = 'メモ引っ越し'; document.querySelector('#memo').dispatchEvent(new Event('input'))")
+    ev(p, "goHome()"); p.wait_for_function("mode === 'home'")
+    rec = ev(p, "dumpRecords()")
+    assert "progress" in rec["data"], rec["data"].keys()
+    return rec
+
+@test("記録の書き出し・読み込み：ファイルに出して別の端末で置き換え、壊れたファイルは今の記録に触らない")
+def t_export_import(ctx):
+    p = fresh_page(ctx)
+    rec = make_records(p)
+    ev(p, "setTab('record')")
+    # 共有シートがあるブラウザ（WebKit）では share に回るので、ここではダウンロードの経路を確かめる
+    ev(p, "Object.defineProperty(navigator, 'canShare', {value: undefined, configurable: true})")
+    with p.expect_download() as dl:
+        ev(p, "document.querySelector('#btn-export').click()")
+    out = json.loads(open(dl.value.path(), encoding="utf-8").read())
+    assert out["format"] == "bokitore-records" and out["data"] == rec["data"]
+    assert dl.value.suggested_filename.startswith("bokitrain-")
+    # まっさらな端末で読み込む
+    ev(p, "__t.fresh()")
+    assert ev(p, "hasRecords()") is False
+    p.set_input_files("#import-file", files=[{"name": "r.json", "mimeType": "application/json", "buffer": json.dumps(out).encode("utf-8")}])
+    p.wait_for_function("document.querySelector('#sheet-acct').classList.contains('on')")
+    with p.expect_navigation():
+        ev(p, "__t.chip('置き換える')")
+    p.wait_for_function("typeof PROBLEMS !== 'undefined'")
+    p.evaluate(HELPERS)
+    same_records(ev(p, "dumpRecords().data"), rec["data"])
+    assert ev(p, "Object.keys(progress).length") > 0
+    p.wait_for_function("document.querySelector('#toast').textContent === '学習記録を読み込みました'")
+    # 壊れたファイル：値が文字列でない → 置き換えず、記録は残る
+    bad = {"format": "bokitore-records", "version": 1, "data": {"progress": {"x": 1}}}
+    p.set_input_files("#import-file", files=[{"name": "b.json", "mimeType": "application/json", "buffer": json.dumps(bad).encode("utf-8")}])
+    p.wait_for_function("document.querySelector('#sheet-acct').classList.contains('on')")
+    ev(p, "__t.chip('置き換える')")
+    assert ev(p, "document.querySelector('#toast').textContent") == "ファイルの中身が壊れています"
+    same_records(ev(p, "dumpRecords().data"), rec["data"])
+    # 別アプリのファイル
+    p.set_input_files("#import-file", files=[{"name": "m.json", "mimeType": "application/json", "buffer": b'{"format":"moppara-export"}'}])
+    p.wait_for_function("document.querySelector('#sheet-acct').classList.contains('on')")
+    ev(p, "__t.chip('置き換える')")
+    assert ev(p, "document.querySelector('#toast').textContent") == "この形式のファイルは読めません"
+    assert not p._errors, p._errors
+
+@test("引っ越し：#move= で記録を受け取りURLから消す・記録がある端末では確認する・壊れていれば何もしない")
+def t_move(ctx):
+    p = fresh_page(ctx)
+    rec = make_records(p)
+    packed = ev(p, "packRecords(dumpRecords())")
+    assert ev(p, f"JSON.stringify(unpackRecords('{packed}').data) === JSON.stringify(dumpRecords().data)")
+    # 旧サイト以外では案内を出さない
+    assert ev(p, "document.querySelector('#move-banner').hidden")
+    # まっさらな端末：確認なしで受け取って開き直す
+    # 新しい場所を一度開いただけの端末（起動時に画面の状態だけ書かれる）も「まっさら」扱い
+    ev(p, "localStorage.clear()"); p.goto("about:blank"); p.goto(URL); p.wait_for_function("typeof PROBLEMS !== 'undefined'")
+    assert ev(p, "hasRecords()") is False
+    p.goto("about:blank"); p.goto(URL + "#move=" + packed)
+    p.wait_for_function("typeof PROBLEMS !== 'undefined' && document.querySelector('#toast').textContent === '前の場所から学習記録を引き継ぎました'")
+    assert ev(p, "location.hash") == ""
+    same_records(ev(p, "dumpRecords().data"), rec["data"])
+    assert ev(p, "document.querySelector('#memo').value") == "メモ引っ越し"
+    # 記録がある端末：置き換えるか聞く。やめれば今の記録のまま
+    ev(p, "localStorage.setItem('bokitore:memo', JSON.stringify('いまの端末'))")
+    p.goto("about:blank"); p.goto(URL + "#move=" + packed)
+    p.wait_for_function("document.querySelector('#sheet-acct').classList.contains('on')")
+    p.evaluate(HELPERS)
+    ev(p, "__t.chip('やめる')")
+    assert ev(p, "JSON.parse(localStorage.getItem('bokitore:memo'))") == "いまの端末"
+    assert ev(p, "location.hash") == ""
+    # 壊れた #move=
+    p.goto("about:blank"); p.goto(URL + "#move=@@@")
+    p.wait_for_function("typeof PROBLEMS !== 'undefined' && document.querySelector('#toast').textContent.indexOf('受け取れませんでした') >= 0")
+    assert ev(p, "JSON.parse(localStorage.getItem('bokitore:memo'))") == "いまの端末"
+    assert not p._errors, p._errors
+
 # ---------------- 実行 ----------------
 def main():
     if not os.path.exists(os.path.join(HERE, "bokitore.html")):
