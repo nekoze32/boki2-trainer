@@ -17,7 +17,7 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="ボキトレイン">
 <title>ボキトレイン</title>
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
 <meta name="theme-color" content="#0E7A5F">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@500;700&family=Zen+Kaku+Gothic+New:wght@400;500;700&family=IBM+Plex+Mono:wght@500;600&display=swap">
@@ -61,9 +61,10 @@
         ＝シートが短くてスクロールできないと overscroll-behavior:contain は効かず、指の動きが文書へ流れていた */
   html,body{margin:0; padding:0; height:100%; overflow:hidden; overscroll-behavior:none}
   html{height:100dvh}
-  /* ダブルタップ拡大だけを止める。manipulation はピンチ拡大を残すので、拡大したい人の手段は奪わない
-     （user-scalable=no は拡大そのものを禁止するうえ、iOS Safariでは無視される） */
-  body{background:var(--bg); color:var(--ink); font-family:"Zen Kaku Gothic New","Hiragino Kaku Gothic ProN","Yu Gothic",sans-serif; font-size:15px; line-height:1.7; touch-action:manipulation;
+  /* 画面の拡大・縮小をさせない（2026-10-16 阿部さん「拡大縮小できちゃうの直して」。アプリとして使う）
+     pan-x pan-y＝ピンチもダブルタップ拡大も止める。iOS Safari はこの値を読めないので manipulation が残り、
+     ピンチは JS（gesturestart と2本指の touchmove）で止める。viewport の user-scalable=no は Android 用 */
+  body{background:var(--bg); color:var(--ink); font-family:"Zen Kaku Gothic New","Hiragino Kaku Gothic ProN","Yu Gothic",sans-serif; font-size:15px; line-height:1.7; touch-action:manipulation; touch-action:pan-x pan-y;
        -webkit-user-select:none; user-select:none; -webkit-touch-callout:none}   /* 長押しで文字選択・コピーの吹き出しを出さない（アプリとして） */
   body *{-webkit-user-select:inherit; user-select:inherit}                        /* auto の解決差を潰して明示的に継承 */
   textarea,input{-webkit-user-select:text; user-select:text; -webkit-touch-callout:default}   /* 入力欄だけは選択できる（メモ・試験日） */
@@ -253,7 +254,7 @@
   /* sheets */
   .scrim{position:fixed; inset:0; background:rgba(10,15,12,.45); opacity:0; pointer-events:none; transition:opacity .28s; z-index:30}
   .scrim.on{opacity:1; pointer-events:auto}
-  .sheet{position:fixed; left:0; right:0; bottom:0; z-index:31; background:var(--surface); border-radius:20px 20px 0 0; box-shadow:0 -8px 40px rgba(0,0,0,.25); transform:translateY(105%); transition:transform .30s cubic-bezier(.2,.7,.2,1); padding:14px 16px calc(18px + env(safe-area-inset-bottom)); max-height:min(85dvh, 88svh); overflow-y:auto; -webkit-overflow-scrolling:touch; overscroll-behavior:contain; touch-action:pan-y pinch-zoom}
+  .sheet{position:fixed; left:0; right:0; bottom:0; z-index:31; background:var(--surface); border-radius:20px 20px 0 0; box-shadow:0 -8px 40px rgba(0,0,0,.25); transform:translateY(105%); transition:transform .30s cubic-bezier(.2,.7,.2,1); padding:14px 16px calc(18px + env(safe-area-inset-bottom)); max-height:min(85dvh, 88svh); overflow-y:auto; -webkit-overflow-scrolling:touch; overscroll-behavior:contain; touch-action:pan-x pan-y}
   .sheet.on{transform:translateY(0)}
   .sheet .inner{max-width:480px; margin:0 auto}
   .sheet h3{margin:0 0 10px; font-size:14px}
@@ -266,6 +267,20 @@
   .memotoggle{display:block; width:100%; height:36px; margin-bottom:10px; border-radius:10px; background:var(--surface2); border:1px solid var(--line); font-size:13px; color:var(--ink-soft); text-align:left; padding:0 12px}
   .memotoggle[aria-expanded="true"]{color:var(--accent); font-weight:600}
   @media (prefers-reduced-motion: reduce){ .sheet{transition:none} .scrim{transition:none} }
+  /* 横長の大きい画面（Galaxy Z Fold8 を開いた4:3・iPad横・PC）では、シートを右半分に出す。
+     下から出すと問題文の4行目以降が隠れて、数字を見ながら打てない。右半分なら Fold の折り目で左右に分かれ、
+     左＝問題文・右＝電卓になる。問題文はシートの左の空きに寄せる（body.sheeton） */
+  @media (min-width:720px) and (min-aspect-ratio:1/1){
+    .sheet{left:auto; top:0; bottom:0; width:min(460px,50vw); max-height:none; border-radius:20px 0 0 20px; transform:translateX(105%);
+           box-shadow:-8px 0 40px rgba(0,0,0,.18); padding:max(16px, env(safe-area-inset-top)) max(18px, env(safe-area-inset-right)) calc(18px + env(safe-area-inset-bottom)) 18px}
+    .sheet.on{transform:none}
+    .sheet .grabber{display:none}
+    .numchips{flex-wrap:wrap; overflow-x:visible}   /* 幅があるので横スクロールさせず全部並べる */
+    .scrim{background:rgba(10,15,12,.12)}
+    #app{transition:margin .30s cubic-bezier(.2,.7,.2,1)}
+    body.sheeton #app{margin-right:min(460px,50vw)}
+    @media (prefers-reduced-motion: reduce){ #app{transition:none} }
+  }
   .chips{display:flex; flex-wrap:wrap; gap:8px}
   .chip{background:var(--surface2); border:1px solid var(--line); border-radius:99px; padding:9px 14px; font-size:14px; min-height:44px}
   .chip:active,.chip.sel{background:var(--accent-soft); border-color:var(--accent)}
@@ -290,6 +305,14 @@
   .npk.op{background:var(--surface); color:var(--accent); font-weight:700}
   .npk.dot{font-weight:700}
   .npdelbtn{width:100%; margin-top:10px; height:44px; border-radius:12px; color:var(--ng-ink); background:var(--ng-bg); border:1px solid var(--ng-line); font-weight:700; font-size:14px; display:none}
+  /* 背の低い縦長（Fold8 を閉じた外画面 10:16 など）では電卓を詰めて、問題文の見える量を増やす */
+  @media (max-height:740px) and (max-aspect-ratio:1/1){
+    .sheet{padding-top:10px}
+    .sheet .grabber{margin-bottom:6px}
+    .numchips{margin-bottom:6px} .numchips button{height:30px}
+    .npdisp{padding:4px 12px; margin-bottom:6px} .npdisp .val{font-size:22px; min-height:28px}
+    .npgrid{gap:6px} .npk{height:44px}
+  }
   .npdelbtn.on{display:block}
   .memo{width:100%; min-height:72px; background:var(--surface2); border:1px solid var(--line); border-radius:12px; color:var(--ink); font-family:inherit; font-size:14px; padding:10px 12px; resize:vertical; margin-bottom:10px}
 
@@ -459,6 +482,9 @@
   .esheet.je .jeside.d th:first-child{color:var(--debit)}
   .esheet.je .jeside.c th:first-child{color:var(--credit)}
   @media (max-width:560px){ .esheet.je{flex-direction:column; gap:4px} }
+  /* 横長でシートを右半分に出す画面（Fold8 を開いた画面など）では、左の答案用紙が半分の幅になる。
+     開くたびに並びが変わると入力中の欄が動くので、最初から縦に積んでおく */
+  @media (min-width:720px) and (max-width:1119px) and (min-aspect-ratio:1/1){ .esheet.je{flex-direction:column; gap:4px} }
   .eblock{margin-top:14px}
   .eprompt{background:var(--surface); border:1px solid var(--line); border-radius:14px; padding:12px 15px; font-size:14px; box-shadow:var(--shadow)}
   .eprompt .pt{float:right; font-size:11px; color:var(--accent); font-weight:700; margin-left:10px; background:var(--accent-soft); border-radius:99px; padding:2px 9px}
@@ -745,7 +771,7 @@ const TOPIC_ORDER = {
 };
 const INTERVALS = [0,1,3,7,14,30]; // box → 次回までの日数
 const APP_URL = "https://nekoze32.github.io/boki2-trainer/";
-const BUILD = "2026-10-08";   // 版番号（ビルド時に日付へ差し替え）
+const BUILD = "2026-10-16";   // 版番号（ビルド時に日付へ差し替え）
 const FEEDBACK_URL = "https://docs.google.com/forms/d/e/1FAIpQLSeKGOUbap2dbOW_HaCHLNMERJX6zg5s9f4gi2dLL4oUCL3oXw/viewform";
 const FB_DETAIL = "entry.1864441160";   // くわしく教えてください
 const FB_WHERE  = "entry.1350137674";   // どの画面・どの問題
@@ -1068,14 +1094,14 @@ fitBottom();
 function openSheet(el){
   closeSheet();
   lastFocus = document.activeElement;
-  openSheetEl = el; el.inert = false; el.classList.add("on"); scrim.classList.add("on");
+  openSheetEl = el; el.inert = false; el.classList.add("on"); scrim.classList.add("on"); document.body.classList.add("sheeton");
   el.scrollTop = 0; fitSheet();
   $("#app").inert = true; $(".actionbar").classList.add("behind");   // 操作バーは inert でなく visibility で隠す（iOSで inert の戻しを取りこぼしてボタンが死ぬ癖を避ける）
   setTimeout(() => { fitSheet(); el.focus({preventScroll:true}); }, 30);
 }
 function closeSheet(){
   if(openSheetEl){ openSheetEl.classList.remove("on"); openSheetEl.inert = true; openSheetEl.style.bottom = ""; openSheetEl = null; }
-  scrim.classList.remove("on");
+  scrim.classList.remove("on"); document.body.classList.remove("sheeton");
   $("#app").inert = false; $(".actionbar").classList.remove("behind");
   if(lastFocus && lastFocus.focus){ try{ lastFocus.focus({preventScroll:true}); }catch(e){} }
   lastFocus = null;
@@ -1090,6 +1116,12 @@ document.querySelectorAll(".sheet").forEach(sh => {
   sh.addEventListener("touchmove", e => { if(y0 !== null && e.touches[0].clientY - y0 > 80 && sh.scrollTop <= 0){ y0 = null; closeSheet(); } }, {passive:true});
   sh.addEventListener("touchend", () => { y0 = null; });
 });
+
+/* 拡大・縮小を止める（CSSの touch-action と viewport が効かないブラウザ向け）
+   iOS Safari＝ピンチは gesture* イベント、2本指の touchmove。PC＝トラックパッドのピンチは ctrl+ホイールで届く */
+["gesturestart","gesturechange","gestureend"].forEach(t => document.addEventListener(t, e => e.preventDefault(), {passive:false}));
+document.addEventListener("touchmove", e => { if(e.touches.length > 1) e.preventDefault(); }, {passive:false});
+window.addEventListener("wheel", e => { if(e.ctrlKey) e.preventDefault(); }, {passive:false});
 
 /* toast */
 let toastTimer = null;

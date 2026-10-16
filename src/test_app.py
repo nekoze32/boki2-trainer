@@ -273,16 +273,75 @@ def t_calc_sheet_height(ctx):
     assert "12" in ev(p, "document.querySelector('#memo').value")
     assert not p._errors, p._errors
 
-@test("ダブルタップで拡大しない・ただしピンチ拡大は残す")
-def t_doubletap(ctx):
+@test("画面の拡大・縮小ができない（ピンチ・ダブルタップ・ctrl+ホイール）")
+def t_nozoom(ctx):
     p = fresh_page(ctx)
     vp = ev(p, "document.querySelector('meta[name=viewport]').content")
-    assert "user-scalable=no" not in vp and "maximum-scale" not in vp, "拡大そのものを禁止している（アクセシビリティ後退）: " + vp
-    assert ev(p, "getComputedStyle(document.body).touchAction") == "manipulation", "ダブルタップ拡大が止まっていない"
-    # シートの中でもピンチ拡大を殺していないこと
+    assert "user-scalable=no" in vp and "maximum-scale=1" in vp, "viewport で拡大を止めていない: " + vp
+    # pan-x pan-y＝ピンチもダブルタップも止まる。読めないエンジン（iOS Safari）は manipulation に落ちてJSで止める
+    ok = ("pan-x pan-y",) if os.environ.get("BOKI_BROWSER", "chromium") == "chromium" else ("pan-x pan-y", "manipulation")
+    assert ev(p, "getComputedStyle(document.body).touchAction") in ok, ev(p, "getComputedStyle(document.body).touchAction")
     for sel in ["#sheet-num", "#sheet-calc", "#sheet-acct"]:
         ta = ev(p, f"getComputedStyle(document.querySelector('{sel}')).touchAction")
-        assert "pinch-zoom" in ta or ta in ("auto", "manipulation"), f"{sel} でピンチ拡大が殺されている: {ta}"
+        assert "pinch-zoom" not in ta and ta not in ("auto",), f"{sel} でピンチ拡大が残っている: {ta}"
+    # iOS のピンチ（gesture*）と PC のトラックパッドのピンチ（ctrl+ホイール）は止める。普通のホイールは止めない
+    assert ev(p, "(() => { const e = new Event('gesturestart', {cancelable:true}); document.dispatchEvent(e); return e.defaultPrevented; })()")
+    assert ev(p, "(() => { const e = new WheelEvent('wheel', {ctrlKey:true, deltaY:-10, cancelable:true, bubbles:true}); document.body.dispatchEvent(e); return e.defaultPrevented; })()")
+    assert not ev(p, "(() => { const e = new WheelEvent('wheel', {deltaY:10, cancelable:true, bubbles:true}); document.body.dispatchEvent(e); return e.defaultPrevented; })()")
+    assert not p._errors, p._errors
+
+def open_num_in_quiz(p):
+    ev(p, "startSession('today')")
+    ev(p, "document.querySelector('.addline[data-side=\"debit\"]').click(); document.querySelector('#acct-chips .chip').click()")
+    p.wait_for_function("document.querySelector('#sheet-num').classList.contains('on')")
+    p.wait_for_timeout(450)   # シートと問題文の寄せのアニメーションを待つ
+
+@test("Fold8を開いた横長画面：電卓は右半分に出て、問題文は左に全部見える")
+def t_fold_inner(ctx):
+    fx = ctx.browser.new_context(viewport={"width": 880, "height": 660}, device_scale_factor=2, is_mobile=True, has_touch=True, locale="ja-JP")
+    try:
+        p = fresh_page(fx)
+        open_num_in_quiz(p)
+        sh = ev(p, "(() => { const r = document.querySelector('#sheet-num').getBoundingClientRect(); return [r.left, r.top, r.width, r.bottom]; })()")
+        assert abs(sh[0] - 440) <= 1 and sh[1] <= 1 and abs(sh[2] - 440) <= 1 and sh[3] >= 659, f"電卓が右半分に出ていない: {sh}"
+        q = ev(p, "(() => { const r = document.querySelector('#q-text').getBoundingClientRect(); return [r.right, r.bottom]; })()")
+        assert q[0] <= 440 and q[1] <= 660, f"問題文が電卓に隠れている: {q}"
+        # 電卓のキーと OK も画面に収まる
+        ok = ev(p, "document.querySelector('#sheet-num .okmini').getBoundingClientRect().bottom")
+        last = ev(p, "Math.max(...[...document.querySelectorAll('#sheet-num .npk')].map(k => k.getBoundingClientRect().bottom))")
+        assert ok <= 660 and last <= 660, (ok, last)
+        # 閉じれば問題文は中央に戻る
+        ev(p, "closeSheet()"); p.wait_for_timeout(450)
+        assert not ev(p, "document.body.classList.contains('sheeton')")
+        app = ev(p, "(() => { const r = document.querySelector('#app').getBoundingClientRect(); return [r.left, 880 - r.right]; })()")
+        assert abs(app[0] - app[1]) <= 1, f"問題文が中央に戻らない: {app}"
+        # 模試の仕訳の答案用紙は、左半分の幅でも列が重ならないよう縦に積む
+        ev(p, "startExam(EXAMS[0].id, true)")
+        assert ev(p, "getComputedStyle(document.querySelector('#e-body .esheet.je')).flexDirection") == "column"
+        assert not p._errors, p._errors
+    finally:
+        fx.close()
+
+@test("Fold8を閉じた外画面・普通のスマホ：電卓は下から出る・外画面では詰めて問題文を広く見せる")
+def t_fold_cover(ctx):
+    # 普通のスマホ（既定の 375x812）は今までどおり下から・キーは52px
+    p = fresh_page(ctx)
+    open_num_in_quiz(p)
+    assert ev(p, "document.querySelector('#sheet-num').getBoundingClientRect().left") == 0
+    assert ev(p, "document.querySelector('#sheet-num .npgrid .npk').getBoundingClientRect().height") == 52
+    fx = ctx.browser.new_context(viewport={"width": 412, "height": 660}, device_scale_factor=2, is_mobile=True, has_touch=True, locale="ja-JP")
+    try:
+        p = fresh_page(fx)
+        open_num_in_quiz(p)
+        top = ev(p, "document.querySelector('#sheet-num').getBoundingClientRect().top")
+        assert ev(p, "document.querySelector('#sheet-num').getBoundingClientRect().left") == 0
+        assert ev(p, "document.querySelector('#sheet-num .npgrid .npk').getBoundingClientRect().height") == 44
+        assert top >= 660 * 0.36, f"外画面で電卓が問題文を覆いすぎ: シート上端 {top}px"
+        last = ev(p, "Math.max(...[...document.querySelectorAll('#sheet-num .npk')].map(k => k.getBoundingClientRect().bottom))")
+        assert last <= 660, last
+        assert not p._errors, p._errors
+    finally:
+        fx.close()
 
 @test("電卓は市販と同じ並び（＝が右下・小数点あり・OKはグリッド外）")
 def t_pad_layout(ctx):
