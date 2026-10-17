@@ -301,6 +301,15 @@ def t_fold_inner(ctx):
     fx = ctx.browser.new_context(viewport={"width": 880, "height": 660}, device_scale_factor=2, is_mobile=True, has_touch=True, locale="ja-JP")
     try:
         p = fresh_page(fx)
+        # ホームは左右2列（横幅を余らせない）
+        r = ev(p, "[...document.querySelectorAll('#pane-today .col-a, #pane-today .col-b')].map(e => { const b = e.getBoundingClientRect(); return [Math.round(b.left), Math.round(b.top), Math.round(b.width)]; })")
+        assert len(r) == 2 and r[0][1] == r[1][1] and r[1][0] > 440 and r[0][2] > 380, f"ホームが2列になっていない: {r}"
+        # 仕訳：左＝問題文・右＝借方貸方、判定ボタンは右の列
+        ev(p, "startSession('today')"); p.wait_for_timeout(450)   # 画面が右から入るアニメーションを待つ
+        qc = ev(p, "document.querySelector('#scr-quiz .qcard').getBoundingClientRect().right")
+        je = ev(p, "document.querySelector('#scr-quiz .je').getBoundingClientRect().left")
+        cta = ev(p, "document.querySelector('#cta').getBoundingClientRect().left")
+        assert qc <= 440 and je >= 440 and cta >= 440, f"仕訳画面が左右に分かれていない: {qc} {je} {cta}"
         open_num_in_quiz(p)
         sh = ev(p, "(() => { const r = document.querySelector('#sheet-num').getBoundingClientRect(); return [r.left, r.top, r.width, r.bottom]; })()")
         assert abs(sh[0] - 440) <= 1 and sh[1] <= 1 and abs(sh[2] - 440) <= 1 and sh[3] >= 659, f"電卓が右半分に出ていない: {sh}"

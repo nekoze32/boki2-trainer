@@ -267,10 +267,42 @@
   .memotoggle{display:block; width:100%; height:36px; margin-bottom:10px; border-radius:10px; background:var(--surface2); border:1px solid var(--line); font-size:13px; color:var(--ink-soft); text-align:left; padding:0 12px}
   .memotoggle[aria-expanded="true"]{color:var(--accent); font-weight:600}
   @media (prefers-reduced-motion: reduce){ .sheet{transition:none} .scrim{transition:none} }
-  /* 横長の大きい画面（Galaxy Z Fold8 を開いた4:3・iPad横・PC）では、シートを右半分に出す。
-     下から出すと問題文の4行目以降が隠れて、数字を見ながら打てない。右半分なら Fold の折り目で左右に分かれ、
-     左＝問題文・右＝電卓になる。問題文はシートの左の空きに寄せる（body.sheeton） */
+  /* ===== 見開き：横長の大きい画面（Galaxy Z Fold8 を開いた4:3・iPad横・PC） =====
+     機種名は見ない（ブラウザは機種名をほぼ渡さない）。画面の実寸が「幅720px以上かつ横長」なら見開きにする。
+     ・ホーム：左右2列。問題画面：左＝問題文（スクロールしても付いてくる）・右＝解答欄
+     ・シートは右半分に出す。左の問題文は隠れず、Fold の折り目で左＝問題・右＝電卓に分かれる
+     ・模試だけは本番の答案と同じ1列（820px）。シートを開くと左に寄せる（body.sheeton） */
   @media (min-width:720px) and (min-aspect-ratio:1/1){
+    #app{max-width:1180px; padding-left:24px; padding-right:24px}
+    .actionbar{padding-left:24px; padding-right:24px}
+    .actionbar .inner{max-width:1132px}
+    .tabbar{flex:0 1 640px; margin:0 auto}
+    #pane-today.on{display:flex; gap:24px; align-items:flex-start; flex-wrap:wrap}
+    #pane-today .col-a,#pane-today .col-b{flex:1 1 0; min-width:0}
+    #pane-today .move,#pane-today .a2hs{flex:1 0 100%}
+    #h-tmap{display:grid; grid-template-columns:1fr 1fr; gap:0 16px; align-items:start}
+    #h-drills,#h-exams{display:grid; grid-template-columns:1fr 1fr; gap:10px}
+    #pane-record.on{display:grid; grid-template-columns:1fr 1fr; gap:0 24px; align-items:start}
+    #pane-record > .sec{grid-column:1}
+    #pane-record > .sec:nth-child(2){grid-column:2; grid-row:1 / span 3}
+    #scr-result{width:100%; max-width:760px; margin:0 auto}
+    /* 仕訳：左＝問題文・右＝借方貸方とヒント・判定 */
+    #scr-quiz.on,#scr-drill.on{display:grid; grid-template-columns:1fr 1fr; column-gap:24px; align-content:start; grid-template-rows:auto auto auto auto 1fr}
+    #scr-quiz .dhead,#scr-drill .dhead{grid-column:1 / -1; grid-row:1}
+    #scr-quiz .qcard{grid-column:1; grid-row:2 / span 4; align-self:start; position:sticky; top:12px}
+    #scr-quiz .je{grid-column:2; grid-row:2; margin-top:0}
+    #q-help{grid-column:2; grid-row:3}
+    #q-fb{grid-column:2; grid-row:4}
+    /* ドリル：左＝問題文と今の設問（電卓を開いても見える）・右＝ボックス図 */
+    #scr-drill .qcard{grid-column:1; grid-row:2}
+    #b-step{grid-column:1; grid-row:3}
+    #b-help{grid-column:1; grid-row:4; align-self:start}
+    #b-boxes{grid-column:2; grid-row:2 / span 4; min-width:0}
+    #b-boxes > :first-child{margin-top:0}
+    #b-fb{grid-column:1 / -1}
+    /* 判定ボタンは右の列の下に置く（電卓ボタン52px＋すき間10px＋判定＝右の列の幅） */
+    body[data-scr="quiz"] .actionbar .inner,body[data-scr="drill"] .actionbar .inner{justify-content:flex-end}
+    body[data-scr="quiz"] .cta,body[data-scr="drill"] .cta{flex:0 0 calc(50% - 12px - 62px)}
     .sheet{left:auto; top:0; bottom:0; width:min(460px,50vw); max-height:none; border-radius:20px 0 0 20px; transform:translateX(105%);
            box-shadow:-8px 0 40px rgba(0,0,0,.18); padding:max(16px, env(safe-area-inset-top)) max(18px, env(safe-area-inset-right)) calc(18px + env(safe-area-inset-bottom)) 18px}
     .sheet.on{transform:none}
@@ -278,7 +310,7 @@
     .numchips{flex-wrap:wrap; overflow-x:visible}   /* 幅があるので横スクロールさせず全部並べる */
     .scrim{background:rgba(10,15,12,.12)}
     #app{transition:margin .30s cubic-bezier(.2,.7,.2,1)}
-    body.sheeton #app{margin-right:min(460px,50vw)}
+    body.wide.sheeton #app{margin-right:min(460px,50vw)}
     @media (prefers-reduced-motion: reduce){ #app{transition:none} }
   }
   .chips{display:flex; flex-wrap:wrap; gap:8px}
@@ -523,6 +555,7 @@
         新しい場所でも、ここまでの学習記録をそのまま使えます。下のボタンで記録ごと移ってください。
         <button class="go" id="btn-move">記録ごと新しい場所へ移る</button>
       </div>
+      <div class="col-a">
       <div class="today">
         <div class="t">まずはここから</div>
         <button class="go" id="btn-today">きょうの学習を始める</button>
@@ -530,12 +563,15 @@
         <div class="sub num">復習待ち <span id="h-due">0</span> · 新規 <span id="h-new">0</span> · きょう答えた <span id="h-today">0</span></div>
       </div>
       <div class="led" id="h-coach" aria-live="polite" title="タップで次のTips"><span class="leddot"></span><span class="ledwin"><span class="ledtxt" id="h-coach-t"></span></span></div>
+      </div>
+      <div class="col-b">
       <div class="jhead">合格までの道のり</div>
       <div class="journey" id="h-journey"></div>
       <div class="more">
         <button class="teaser drillnext" id="h-next-drill"><span class="tg">ドリル</span><b id="h-next-drill-t"></b><span class="arr" id="h-next-drill-a">→</span></button>
         <button class="teaser" id="h-teaser-map"><span class="tg">論点</span><b id="h-teaser-map-t"></b><span class="arr">→</span></button>
         <button class="teaser" id="h-teaser-week"><span class="tg">今週</span><b id="h-teaser-week-t"></b><span class="arr">→</span></button>
+      </div>
       </div>
       <div class="a2hs" id="a2hs" hidden><span>電車ですぐ1問。ホーム画面に追加できます</span><button id="a2hs-how">方法</button><button id="a2hs-no" aria-label="閉じる">✕</button></div>
     </div>
@@ -771,7 +807,7 @@ const TOPIC_ORDER = {
 };
 const INTERVALS = [0,1,3,7,14,30]; // box → 次回までの日数
 const APP_URL = "https://nekoze32.github.io/boki2-trainer/";
-const BUILD = "2026-10-16";   // 版番号（ビルド時に日付へ差し替え）
+const BUILD = "2026-10-17";   // 版番号（ビルド時に日付へ差し替え）
 const FEEDBACK_URL = "https://docs.google.com/forms/d/e/1FAIpQLSeKGOUbap2dbOW_HaCHLNMERJX6zg5s9f4gi2dLL4oUCL3oXw/viewform";
 const FB_DETAIL = "entry.1864441160";   // くわしく教えてください
 const FB_WHERE  = "entry.1350137674";   // どの画面・どの問題
@@ -872,6 +908,7 @@ function show(name, opt){
   updateCta();
   document.body.classList.toggle("home", name === "home");
   document.body.classList.toggle("wide", name === "exam" || name === "examresult");
+  document.body.dataset.scr = name;   // 見開き（横長の大きい画面）で画面ごとに2列の組み方を変える
   if(name !== "exam") stopTimer();
   if(name === "home") renderHome();
 }
